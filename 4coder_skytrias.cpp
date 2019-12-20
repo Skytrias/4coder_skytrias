@@ -900,7 +900,7 @@ skytrias_render_buffer(Application_Links *app, View_ID view_id, Face_ID face_id,
     if(global_code_peek_open)
     {
         Fleury4RenderRangeHighlight(app, view_id, text_layout_id, global_code_peek_token_range);
-        skytrias_render_code_peek(app, view_id, face_id, buffer, frame_info);
+        skytrias_render_code_peek(app, active_view, face_id, buffer, frame_info);
     }
 	
 	draw_set_clip(app, prev_clip);
