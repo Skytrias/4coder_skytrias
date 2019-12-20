@@ -243,8 +243,9 @@ skytrias_color_scheme(Application_Links *app){
     table->arrays[defcolor_line_numbers_text] = make_colors(arena, 0xFF4C566A);
 }
 
+// NOTE(Skytrias): custom growth animation added to ryan squishy cursor
 static void
-Fleury4RenderCursor(Application_Links *app, View_ID view_id, b32 is_active_view,
+skytrias_render_cursor(Application_Links *app, View_ID view_id, b32 is_active_view,
                     Buffer_ID buffer, Text_Layout_ID text_layout_id,
                     f32 roundness, f32 outline_thickness, Frame_Info frame_info)
 {
@@ -309,8 +310,9 @@ Fleury4RenderCursor(Application_Links *app, View_ID view_id, b32 is_active_view,
                 rect.x1 = (rect.x0 + cursor_size_x) + growth;
                 rect.y1 = (rect.y0 + cursor_size_y) + growth;
                 
-                global_smooth_cursor_position.x = rect.x0;
-                global_smooth_cursor_position.y = rect.y0;
+				// no growth on code_peek
+                global_smooth_cursor_position.x = rect.x0 + growth / 2.0f;
+                global_smooth_cursor_position.y = rect.y0 + growth / 2.0f;
                 
                 if(target_rect.y0 > last_rect.y0)
                 {
@@ -715,7 +717,7 @@ Fleury4RenderRangeHighlight(Application_Links *app, View_ID view_id, Text_Layout
 }
 
 static void
-Fleury4RenderCodePeek(Application_Links *app, View_ID view_id, Face_ID face_id, Buffer_ID buffer,
+skytrias_render_code_peek(Application_Links *app, View_ID view_id, Face_ID face_id, Buffer_ID buffer,
                       Frame_Info frame_info)
 {
     if(global_code_peek_open &&
@@ -730,21 +732,24 @@ Fleury4RenderCodePeek(Application_Links *app, View_ID view_id, Face_ID face_id, 
             animate_in_n_milliseconds(app, 0);
         }
         
-        Rect_f32 rect = {0};
-        rect.x0 = (float)((int)global_smooth_cursor_position.x + 16);
-        rect.y0 = (float)((int)global_smooth_cursor_position.y + 16);
-        rect.x1 = (float)((int)rect.x0 + 800);
-        rect.y1 = (float)((int)rect.y0 + 600*global_code_peek_open_transition);
-        
-        draw_rectangle(app, rect, 4.f, fcolor_resolve(fcolor_id(defcolor_back)));
-        draw_rectangle_outline(app, rect, 4.f, 3.f, fcolor_resolve(fcolor_id(defcolor_pop2)));
-        
+		// NOTE(Skytrias): write code_peek into the bottom of the panel, easier to read imo
+		// similar to file_bar draw
+		Rect_f32 whole_rect = view_get_screen_rect(app, view_id); 
+		Rect_f32 inner_rect = rect_inner(whole_rect, 3.f); // cut of the outline from 4coder default 
+		Rect_f32_Pair bottom_rect = rect_split_top_bottom_neg(inner_rect, 400.0f);
+		bottom_rect.max.y0 += bottom_rect.max.y1 - (bottom_rect.max.y1 * global_code_peek_open_transition);
+		draw_rectangle(app, bottom_rect.max, 0.0f, fcolor_resolve(fcolor_id(defcolor_back)));
+		draw_rectangle_outline(app, bottom_rect.max, 0.0f, 3.0f, fcolor_resolve(fcolor_id(defcolor_pop2)));
+		Rect_f32 rect = bottom_rect.max;
+		
+		// ?
         if(rect.y1 - rect.y0 > 60.f)
         {
-			rect.x0 += 30;
-			rect.y0 += 30;
-			rect.x1 -= 30;
-			rect.y1 -= 30;
+			
+			rect.x0 += 10;
+			rect.y0 += 10;
+			rect.x1 -= 10;
+			rect.y1 -= 10;
 			
 			Buffer_Point buffer_point =
 			{
@@ -870,7 +875,7 @@ skytrias_render_buffer(Application_Links *app, View_ID view_id, Face_ID face_id,
     switch (fcoder_mode){
         case FCoderMode_Original:
         {
-			Fleury4RenderCursor(app, view_id, is_active_view, buffer, text_layout_id, cursor_roundness, mark_thickness, frame_info);
+			skytrias_render_cursor(app, view_id, is_active_view, buffer, text_layout_id, cursor_roundness, mark_thickness, frame_info);
         }break;
         case FCoderMode_NotepadLike:
         {
@@ -895,7 +900,7 @@ skytrias_render_buffer(Application_Links *app, View_ID view_id, Face_ID face_id,
     if(global_code_peek_open)
     {
         Fleury4RenderRangeHighlight(app, view_id, text_layout_id, global_code_peek_token_range);
-        Fleury4RenderCodePeek(app, view_id, face_id, buffer, frame_info);
+        skytrias_render_code_peek(app, view_id, face_id, buffer, frame_info);
     }
 	
 	draw_set_clip(app, prev_clip);
@@ -954,14 +959,6 @@ skytrias_set_bindings(Mapping *mapping)
     BindMouseWheel(mouse_wheel_scroll);
     BindMouseWheel(mouse_wheel_change_face_size, KeyCode_Control);
     
-    // NOTE(rjf): Custom bindings.
-    {
-        //Bind(open_panel_vsplit, KeyCode_P, KeyCode_Control);
-        //Bind(open_panel_hsplit, KeyCode_Minus, KeyCode_Control);
-        //Bind(close_panel, KeyCode_P, KeyCode_Control, KeyCode_Shift);
-        //Bind(fleury_toggle_colors, KeyCode_Tick, KeyCode_Control);
-    }
-    
     SelectMap(mapid_file);
     ParentMap(mapid_global);
     BindTextInput(write_text_input);
@@ -976,7 +973,6 @@ skytrias_set_bindings(Mapping *mapping)
     Bind(move_left,              KeyCode_Left);
     Bind(move_right,             KeyCode_Right);
     Bind(seek_end_of_line,       KeyCode_End);
-    //Bind(fleury_home,            KeyCode_Home);
     Bind(page_up,                KeyCode_PageUp);
     Bind(page_down,              KeyCode_PageDown);
     Bind(goto_beginning_of_file, KeyCode_PageUp, KeyCode_Control);
@@ -1059,14 +1055,12 @@ skytrias_set_bindings(Mapping *mapping)
     Bind(open_file_in_quotes,        KeyCode_1, KeyCode_Alt);
     Bind(open_matching_file_cpp,     KeyCode_2, KeyCode_Alt);
     
-    // NOTE(rjf): Custom bindings.
-    {
+    // NOTE(Skytrias): custom bindings
+	{
         Bind(fleury_code_peek,          KeyCode_Alt, KeyCode_Control);
         Bind(fleury_close_code_peek,    KeyCode_Escape);
         Bind(fleury_code_peek_go,       KeyCode_Return, KeyCode_Control);
-        //Bind(fleury_write_zero_struct,  KeyCode_0, KeyCode_Control);
     }
-    
 }
 
 void
@@ -1090,6 +1084,7 @@ custom_layer_init(Application_Links *app){
 	skytrias_color_scheme(app);
 }
 
+// default file_bar draw call with macro recording highlighted in red
 static void
 skytrias_draw_file_bar(Application_Links *app, View_ID view_id, Buffer_ID buffer, Face_ID face_id, Rect_f32 bar, f32 delta){
     Scratch_Block scratch(app);
@@ -1148,7 +1143,7 @@ skytrias_draw_file_bar(Application_Links *app, View_ID view_id, Buffer_ID buffer
         push_fancy_string(scratch, &list, pop2_color, str.string);
     }
 	
-	// NOTE(Skytrias): add to file bar
+	// NOTE(Skytrias): push the string REC to the file bar
 	if (global_keyboard_macro_is_recording) {
 		push_fancy_string(scratch, &list, base_color, string_u8_litexpr(" REC"));
 	}
