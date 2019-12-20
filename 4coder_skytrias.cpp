@@ -13,12 +13,9 @@ static f32 ANIMATION_MACRO = 100.0f;
 static f32 global_cursor_counter = 0.0f;
 static u32 global_cursor_times = 0;
 static Vec2_f32 global_smooth_cursor_position = {0};
-static void
-Fleury4RenderCursor(Application_Links *app, View_ID view_id, b32 is_active_view,
-                    Buffer_ID buffer, Text_Layout_ID text_layout_id,
-                    f32 roundness, f32 outline_thickness, Frame_Info frame_info);
 
 // code peek
+static f32 global_code_peek_height = 500.0f; // NOTE(Skytrias): height of code peek 
 static b32 global_code_peek_open = 0;
 static int global_code_peek_match_count = 0;
 String_Match global_code_peek_matches[16] = {0};
@@ -736,20 +733,35 @@ skytrias_render_code_peek(Application_Links *app, View_ID view_id, Face_ID face_
 		// similar to file_bar draw
 		Rect_f32 whole_rect = view_get_screen_rect(app, view_id); 
 		Rect_f32 inner_rect = rect_inner(whole_rect, 3.f); // cut of the outline from 4coder default 
-		Rect_f32_Pair bottom_rect = rect_split_top_bottom_neg(inner_rect, 400.0f);
+		Rect_f32_Pair bottom_rect = rect_split_top_bottom_neg(inner_rect, global_code_peek_height);
 		bottom_rect.max.y0 += bottom_rect.max.y1 - (bottom_rect.max.y1 * global_code_peek_open_transition);
 		draw_rectangle(app, bottom_rect.max, 0.0f, fcolor_resolve(fcolor_id(defcolor_back)));
 		draw_rectangle_outline(app, bottom_rect.max, 0.0f, 3.0f, fcolor_resolve(fcolor_id(defcolor_pop2)));
 		Rect_f32 rect = bottom_rect.max;
 		
-		// ?
+		// NOTE(Skytrias): custom layout and draw of panel
         if(rect.y1 - rect.y0 > 60.f)
         {
-			
 			rect.x0 += 10;
 			rect.y0 += 10;
 			rect.x1 -= 10;
 			rect.y1 -= 10;
+			
+				Scratch_Block scratch(app);
+			Fancy_Line list = {};
+			FColor base_color = fcolor_id(defcolor_base);
+			
+			// file name of buffer
+			String_Const_u8 unique_name = push_buffer_unique_name(app, scratch, match->buffer);
+			push_fancy_string(scratch, &list, base_color, unique_name);
+			
+			//push_fancy_string(scratch, &list, base_color, string_u8_litexpr(" testing"));
+			push_fancy_stringf(scratch, &list, base_color, " - Match: %d of %d", global_code_peek_selected_index, 
+global_code_peek_match_count);
+			
+			draw_fancy_line(app, face_id, fcolor_zero(), &list, rect.p0);
+			
+			rect.y0 += 25;
 			
 			Buffer_Point buffer_point =
 			{
@@ -897,7 +909,7 @@ skytrias_render_buffer(Application_Links *app, View_ID view_id, Face_ID face_id,
     }
 	
 	// NOTE(rjf): Draw code peek
-    if(global_code_peek_open)
+    if(global_code_peek_open && is_active_view)
     {
         Fleury4RenderRangeHighlight(app, view_id, text_layout_id, global_code_peek_token_range);
         skytrias_render_code_peek(app, active_view, face_id, buffer, frame_info);
