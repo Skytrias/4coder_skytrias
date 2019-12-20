@@ -3,8 +3,8 @@
 #if !defined(FCODER_DEFAULT_BINDINGS_CPP)
 #define FCODER_DEFAULT_BINDINGS_CPP
 
+#include <stdlib.h>
 #include "4coder_default_include.cpp"
-#include "4coder_default_map.cpp"
 
 const f32 ANIMATION_CURSOR_GROW1 = 55.0f;
 const f32 ANIMATION_CURSOR_GROW2 = 45.0f;
@@ -624,10 +624,10 @@ Fleury4GetCTokenColor(Token token)
             u32 g = (color & 0x0000ff00) >>  8;
             u32 b = (color & 0x000000ff) >>  0;
             
-                r = (r * 3) / 5;
-                g = (g * 3) / 5;
-                b = (b * 3) / 5;
-                
+            r = (r * 3) / 5;
+            g = (g * 3) / 5;
+            b = (b * 3) / 5;
+            
             color = 0xff000000 | (r << 16) | (g << 8) | (b << 0);
             
             break;
@@ -733,7 +733,7 @@ Fleury4RenderCodePeek(Application_Links *app, View_ID view_id, Face_ID face_id, 
         Rect_f32 rect = {0};
         rect.x0 = (float)((int)global_smooth_cursor_position.x + 16);
         rect.y0 = (float)((int)global_smooth_cursor_position.y + 16);
-        rect.x1 = (float)((int)rect.x0 + 400);
+        rect.x1 = (float)((int)rect.x0 + 800);
         rect.y1 = (float)((int)rect.y0 + 600*global_code_peek_open_transition);
         
         draw_rectangle(app, rect, 4.f, fcolor_resolve(fcolor_id(defcolor_back)));
@@ -776,7 +776,7 @@ Fleury4RenderCodePeek(Application_Links *app, View_ID view_id, Face_ID face_id, 
     {
         global_code_peek_open_transition = 0.f;
     }
-    }
+}
 
 static void
 skytrias_render_buffer(Application_Links *app, View_ID view_id, Face_ID face_id,
@@ -899,7 +899,7 @@ skytrias_render_buffer(Application_Links *app, View_ID view_id, Face_ID face_id,
     }
 	
 	draw_set_clip(app, prev_clip);
-	}
+}
 
 static void
 skytrias_set_bindings(Mapping *mapping)
@@ -1085,21 +1085,20 @@ custom_layer_init(Application_Links *app){
     // NOTE(allen): default hooks and command maps
     set_all_default_hooks(app);
     mapping_init(tctx, &framework_mapping);
-    setup_default_mapping(&framework_mapping, mapid_global, mapid_file, mapid_code);
 	skytrias_set_bindings(&framework_mapping);
 	
 	skytrias_color_scheme(app);
 }
 
- static void
+static void
 skytrias_draw_file_bar(Application_Links *app, View_ID view_id, Buffer_ID buffer, Face_ID face_id, Rect_f32 bar, f32 delta){
     Scratch_Block scratch(app);
 	
 	// NOTE(Skytrias): when recording, highlight file bar
 	if (global_keyboard_macro_is_recording) {
-		//draw_rectangle_fcolor(app, bar, 0.f, fcolor_blend(defcolor_bar, f_red, 0.5f));
+		draw_rectangle_fcolor(app, bar, 0.f, fcolor_blend(fcolor_id(defcolor_bar), 0.5f, f_red, 0.5f));
 	} else {
-    draw_rectangle_fcolor(app, bar, 0.f, fcolor_id(defcolor_bar));
+        draw_rectangle_fcolor(app, bar, 0.f, fcolor_id(defcolor_bar));
 	}
 	
     FColor base_color = fcolor_id(defcolor_base);
