@@ -7,7 +7,8 @@
 #include <stdlib.h>
 #include "4coder_default_include.cpp"
 
-static FColor FUNCTION_HIGHLIGHT_COLOR = fcolor_argb(0.5f, 0.0f, 0.25f, 1.0f);
+static FColor FUNCTION_HIGHLIGHT_COLOR = fcolor_argb(0.533f, 0.752f, 0.815f, 1.0f);
+static FColor STRUCT_HIGHLIGHT_COLOR = fcolor_argb(1.0f, 0.0f, 0.0f, 1.0f);
 const f32 ANIMATION_CURSOR_GROW1 = 55.0f;
 const f32 ANIMATION_CURSOR_GROW2 = 45.0f;
 const f32 ANIMATION_GROW_FACTOR = 5.0f;
@@ -26,9 +27,10 @@ static f32 global_code_peek_open_transition = 0.f;
 static Range_i64 global_code_peek_token_range;
 
 // ryan
-static void Fleury4OpenCodePeek(Application_Links *app, String_Const_u8 base_needle, String_Match_Flag must_have_flags, String_Match_Flag must_not_have_flags);
+static void Fleury4OpenCodePeek(Application_Links *app, String_Const_u8 base_needle, String_Match_Flag must_have_flags, String_Match_Flag must_not_have_flags, Buffer_ID current_buffer);
 static void Fleury4CloseCodePeek(void);
 static void Fleury4NextCodePeek(void);
+static void skytrias_backwards_code_peek();
 static void Fleury4CodePeekGo(Application_Links *app);
 static void skytrias_set_bindings(Mapping *mapping);
 
@@ -67,6 +69,19 @@ Fleury4MakeTypeSearchList(Application_Links *app, Arena *arena, String_Const_u8 
     return(result);
 }
 
+CUSTOM_COMMAND_SIG(skytrias_backwards_code_peek)
+CUSTOM_DOC("Goes back in code peek")
+{
+	View_ID view = get_active_view(app, Access_ReadWriteVisible);
+    i64 pos = view_get_cursor_pos(app, view);
+	
+	if(global_code_peek_open && pos >= global_code_peek_token_range.start &&
+       pos <= global_code_peek_token_range.end)
+    {
+		skytrias_backwards_code_peek();
+	}
+}
+
 CUSTOM_COMMAND_SIG(fleury_code_peek)
 CUSTOM_DOC("Opens code peek.")
 {
@@ -84,7 +99,7 @@ CUSTOM_DOC("Opens code peek.")
         Range_i64 range = enclose_pos_alpha_numeric_underscore(app, buffer, pos);
         global_code_peek_token_range = range;
         String_Const_u8 base_needle = push_token_or_word_under_active_cursor(app, scratch);
-        Fleury4OpenCodePeek(app, base_needle, StringMatch_CaseSensitive, StringMatch_LeftSideSloppy | StringMatch_RightSideSloppy);
+        Fleury4OpenCodePeek(app, base_needle, StringMatch_CaseSensitive, StringMatch_LeftSideSloppy | StringMatch_RightSideSloppy, buffer);
     }
 }
 
@@ -109,7 +124,7 @@ CUSTOM_DOC("Goes to the active code peek.")
 
 static void
 Fleury4OpenCodePeek(Application_Links *app, String_Const_u8 base_needle,
-                    String_Match_Flag must_have_flags, String_Match_Flag must_not_have_flags)
+                    String_Match_Flag must_have_flags, String_Match_Flag must_not_have_flags, Buffer_ID current_buffer_id)
 {
     global_code_peek_match_count = 0;
     
@@ -120,22 +135,16 @@ Fleury4OpenCodePeek(Application_Links *app, String_Const_u8 base_needle,
     String_Match_List matches = find_all_matches_all_buffers(app, scratch, type_array, must_have_flags, must_not_have_flags);
     string_match_list_filter_remove_buffer_predicate(app, &matches, buffer_has_name_with_star);
     
-    for(String_Match *match = matches.first; match; match = match->next)
-    {
-        global_code_peek_matches[global_code_peek_match_count++] = *match;
-        if(global_code_peek_match_count >= sizeof(global_code_peek_matches)/sizeof(global_code_peek_matches[0]))
-        {
-            break;
-        }
-    }
-    
     matches = find_all_matches_all_buffers(app, scratch, base_needle, must_have_flags, must_not_have_flags);
     
+	// NOTE(Skytrias): exclude current view buffer from all results
+	string_match_list_filter_remove_buffer(&matches, current_buffer_id);
+	
     if(global_code_peek_match_count == 0)
     {
         for(String_Match *match = matches.first; match; match = match->next)
         {
-            global_code_peek_matches[global_code_peek_match_count++] = *match;
+			global_code_peek_matches[global_code_peek_match_count++] = *match;
             if(global_code_peek_match_count >= sizeof(global_code_peek_matches)/sizeof(global_code_peek_matches[0]))
             {
                 break;
@@ -175,6 +184,13 @@ Fleury4NextCodePeek(void)
         global_code_peek_open = 0;
     }
 }
+
+// NOTE(Skytrias): goes backwards in the code peek indexes list
+static void skytrias_backwards_code_peek(void) {
+    if (--global_code_peek_selected_index <= 0) {
+        global_code_peek_selected_index = global_code_peek_match_count;
+	}
+    }
 
 static void
 Fleury4CodePeekGo(Application_Links *app)
@@ -222,7 +238,7 @@ skytrias_color_scheme(Application_Links *app){
     table->arrays[defcolor_text_default] = make_colors(arena, 0xFFD8DEE9);
     table->arrays[defcolor_comment] = make_colors(arena, 0xFF4C566A);
     table->arrays[defcolor_comment_pop] = make_colors(arena, 0xFF00A000, 0xFFA00000);
-    table->arrays[defcolor_keyword] = make_colors(arena, 0xFF88C0D0);
+    table->arrays[defcolor_keyword] = make_colors(arena, 0xFF5E81AC);
     table->arrays[defcolor_str_constant] = make_colors(arena, 0xFFA3BE8C);
     table->arrays[defcolor_char_constant] = make_colors(arena, 0xFFA3BE8C);
     table->arrays[defcolor_int_constant] = make_colors(arena, 0xFFB48EAD);
@@ -830,14 +846,20 @@ skytrias_get_token_color_cpp(Token token){
         default:
         {
             switch (token.sub_kind){
-                case TokenCppKind_LiteralTrue:
-                case TokenCppKind_LiteralFalse:
                 case TokenCppKind_ColonColon:
                 case TokenCppKind_ColonEq:
 				{
+					color = defcolor_keyword;
+				}break;
+				
+				
+				case TokenCppKind_LiteralTrue:
+                case TokenCppKind_LiteralFalse:
+                {
                     color = defcolor_bool_constant;
                 }break;
-                case TokenCppKind_LiteralCharacter:
+                
+				case TokenCppKind_LiteralCharacter:
                 case TokenCppKind_LiteralCharacterWide:
                 case TokenCppKind_LiteralCharacterUTF8:
                 case TokenCppKind_LiteralCharacterUTF16:
@@ -845,7 +867,8 @@ skytrias_get_token_color_cpp(Token token){
                 {
                     color = defcolor_char_constant;
                 }break;
-                case TokenCppKind_PPIncludeFile:
+                
+				case TokenCppKind_PPIncludeFile:
                 {
                     color = defcolor_include;
                 }break;
@@ -876,8 +899,7 @@ skytrias_draw_cpp_token_colors(Application_Links *app, Text_Layout_ID text_layou
 }
 
 function void
-skytrias_paint_functions(Application_Links *app, Buffer_ID buffer, Text_Layout_ID text_layout_id,
-                         i64 pos) {
+skytrias_paint_functions(Application_Links *app, Buffer_ID buffer, Text_Layout_ID text_layout_id) {
     i64 keyword_length = 0;
     i64 start_pos = 0;
     i64 end_pos = 0;
@@ -1005,7 +1027,7 @@ skytrias_render_buffer(Application_Links *app, View_ID view_id, Face_ID face_id,
     }
     
     // NOTE(Skytrias): word highlight before braces ()
-    skytrias_paint_functions(app, buffer, text_layout_id, cursor_pos);
+    skytrias_paint_functions(app, buffer, text_layout_id);
     
     // NOTE(allen): Line highlight
     if (global_config.highlight_line_at_cursor && is_active_view){
@@ -1208,6 +1230,7 @@ skytrias_set_bindings(Mapping *mapping)
         Bind(fleury_code_peek,          KeyCode_Alt, KeyCode_Control);
         Bind(fleury_close_code_peek,    KeyCode_Escape);
         Bind(fleury_code_peek_go,       KeyCode_Return, KeyCode_Control);
+        Bind(skytrias_backwards_code_peek, KeyCode_Delete, KeyCode_Control);
     }
 }
 
