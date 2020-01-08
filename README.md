@@ -1,27 +1,40 @@
 # 4files
+![4coder Nord](https://github.com/Skytrias/4files/blob/master/previews/nord_theme.png)
+
 Here are my customizations to [4coder](http://4coder.net/). These also include customizations from other ppl
 Feel free to take a look at the previews and pick out what ever you like into your own customization layer.
 
 ## Features: 
-* Functions/Arrays color highlighting
-* (Rust) Macro color highlighting
-* Smooth cursor from ryan_fleury
-  * Added Heart beat animation
-* Customization to CodePeek from ryan_fleury
+### Functions/Arrays color highlighting
+![function_highlight](https://github.com/Skytrias/4files/blob/master/previews/function_highlight.gif)
+
+### (Rust) Macro color highlighting
+![macro_recording](https://github.com/Skytrias/4files/blob/master/previews/macro_recording_highlight.gif)
+
+## Smooth cursor from ryan_fleury, added Heart beat animation
+![smooth_cursor](https://github.com/Skytrias/4files/blob/master/previews/smooth_cursor.gif)
+
+## Customization to CodePeek from ryan_fleury
   * Changed rendering, now shows the file_name and which buffer is shown
   * Excludes the file you are in currently
   * Jump Backwards in history
-  ![code_peek](https://github.com/Skytrias/4files/blob/master/previews/code_peek_rendering.gif)
-* Indenting of '(' reworked to not be ugly (for rust) anymore
- ![paren_indenting](https://github.com/Skytrias/4files/blob/master/previews/better_paren_indenting.gif)
-* ".iter()" function with '.' are indented now (for rust)
- ![dot_indenting](https://github.com/Skytrias/4files/blob/master/previews/dot_indenting.gif)
-* Rust snippets
-* Nord color theme
-* Macro recording highlighting
- ![macro_recording](https://github.com/Skytrias/4files/blob/master/previews/macro_recording_highlight.gif)
+![code_peek](https://github.com/Skytrias/4files/blob/master/previews/code_peek_rendering.gif)
 
-## Minor details:
+## Indenting of '(' reworked to not be ugly (for rust) anymore
+![paren_indenting](https://github.com/Skytrias/4files/blob/master/previews/better_paren_indenting.gif)
+
+## ".iter()" function with '.' are indented now (for rust)
+![dot_indenting](https://github.com/Skytrias/4files/blob/master/previews/dot_indenting.gif)
+
+## Rust snippets
+![rust_snippets](https://github.com/Skytrias/4files/blob/master/previews/rust_snippets.gif)
+
+## Nord color theme *see above*
+
+## Macro recording highlighting
+![macro_recording](https://github.com/Skytrias/4files/blob/master/previews/macro_recording_highlight.gif)
+
+## Minor features:
 * "HACK:"" is highlighted now
 * Faster scroll speed like in Alpha
 
