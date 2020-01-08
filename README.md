@@ -11,11 +11,15 @@ Feel free to take a look at the previews and pick out what ever you like into yo
   * Changed rendering, now shows the file_name and which buffer is shown
   * Excludes the file you are in currently
   * Jump Backwards in history
-* Indenting of '(' reworked to not be ugly (for rust) anymore 
+  ![code_peek](https://github.com/Skytrias/4files/blob/master/previews/code_peek_rendering.gif)
+* Indenting of '(' reworked to not be ugly (for rust) anymore
+ ![paren_indenting](https://github.com/Skytrias/4files/blob/master/previews/better_paren_indenting.gif)
 * ".iter()" function with '.' are indented now (for rust)
+ ![dot_indenting](https://github.com/Skytrias/4files/blob/master/previews/dot_indenting.gif)
 * Rust snippets
 * Nord color theme
-* Macro recording is highlighted
+* Macro recording highlighting
+ ![macro_recording](https://github.com/Skytrias/4files/blob/master/previews/macro_recording_highlight.gif)
 
 ## Minor details:
 * "HACK:"" is highlighted now
