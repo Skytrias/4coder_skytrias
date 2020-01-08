@@ -801,7 +801,7 @@ skytrias_render_buffer(Application_Links *app, View_ID view_id, Face_ID face_id,
     }
 	
     // NOTE(Skytrias): word highlight before braces ()
-    //skytrias_paint_functions(app, buffer, text_layout_id);
+    skytrias_paint_functions(app, buffer, text_layout_id);
     skytrias_paint_rust_macros(app, buffer, text_layout_id);
     //skytrias_paint_rust_indent(app, buffer, text_layout_id);
     
