@@ -7,6 +7,9 @@ static f32 global_cursor_counter = 0.0f;
 static u32 global_cursor_times = 0;
 static Vec2_f32 global_smooth_cursor_position = {0};
 
+// TODO(Skytrias): 
+// HACK(Skytrias): 
+
 // additional nord colors
 static FColor FUNCTION_HIGHLIGHT_COLOR = fcolor_argb(0.533f, 0.752f, 0.815f, 1.0f);
 static FColor STRUCT_HIGHLIGHT_COLOR = fcolor_argb(0.749f, 0.38f, 0.416f, 1.0f);
