@@ -21,11 +21,12 @@ Feel free to take a look at the previews and pick out what ever you like into yo
 * "HACK:"" is highlighted now
 * Faster scroll speed like in Alpha
 
-## How to use:
+## How to use (Windows):
 1. Clone this repository to your `4coder/custom` folder and name it `skytrias` in my case
-2. I.e. call the build `.bat` file 
+2. Run a x64 terminal where `cl` exists *(Build tools from VS2019)*
+3. I.e. call the build `.bat` file from the root `4coder/` like `custom\skytrias\build.bat` 
     * *(if your folder has a different name, rename it or contents of the bat files)*
-3. 4ed.exe has to be closed when trying to run any .bat file, otherwhise 4ed can't rebuild the `.dll` file 
+4. 4ed.exe has to be closed when trying to run any .bat file, otherwhise 4ed can't rebuild the `.dll` file 
 
 ## build.bat
 Rebuilds the 4coder/custom_4ed.dll with all + your own `.cpp` file specified
