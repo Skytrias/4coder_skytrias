@@ -5,10 +5,17 @@
 #define FCODER_DEFAULT_BINDINGS_CPP
 
 #include <stdlib.h>
+
+// NOTE(Skytrias): exports my snippets into the snippet lister, turn this off or include your own, additionally I'd recommend disabling the general snippets 
+#define SNIPPET_EXPANSION "rust_snippets.inc"
+
 #include "4coder_default_include.cpp"
 
+// additional nord colors
 static FColor FUNCTION_HIGHLIGHT_COLOR = fcolor_argb(0.533f, 0.752f, 0.815f, 1.0f);
-static FColor STRUCT_HIGHLIGHT_COLOR = fcolor_argb(1.0f, 0.0f, 0.0f, 1.0f);
+static FColor STRUCT_HIGHLIGHT_COLOR = fcolor_argb(0.749f, 0.38f, 0.416f, 1.0f);
+static u32 HACK_HIGHLIGHT_COLOR = 0xd08770FF;
+
 const f32 ANIMATION_CURSOR_GROW1 = 55.0f;
 const f32 ANIMATION_CURSOR_GROW2 = 45.0f;
 const f32 ANIMATION_GROW_FACTOR = 5.0f;
@@ -133,9 +140,9 @@ Fleury4OpenCodePeek(Application_Links *app, String_Const_u8 base_needle,
     Scratch_Block scratch(app);
     String_Const_u8_Array type_array = Fleury4MakeTypeSearchList(app, scratch, base_needle);
     String_Match_List matches = find_all_matches_all_buffers(app, scratch, type_array, must_have_flags, must_not_have_flags);
-    string_match_list_filter_remove_buffer_predicate(app, &matches, buffer_has_name_with_star);
     
     matches = find_all_matches_all_buffers(app, scratch, base_needle, must_have_flags, must_not_have_flags);
+    string_match_list_filter_remove_buffer_predicate(app, &matches, buffer_has_name_with_star);
     
 	// NOTE(Skytrias): exclude current view buffer from all results
 	string_match_list_filter_remove_buffer(&matches, current_buffer_id);
@@ -187,7 +194,7 @@ Fleury4NextCodePeek(void)
 
 // NOTE(Skytrias): goes backwards in the code peek indexes list
 static void skytrias_backwards_code_peek(void) {
-    if (--global_code_peek_selected_index <= 0) {
+    if (--global_code_peek_selected_index < 0) {
         global_code_peek_selected_index = global_code_peek_match_count;
 	}
     }
@@ -775,7 +782,7 @@ skytrias_render_code_peek(Application_Links *app, View_ID view_id, Face_ID face_
 			push_fancy_string(scratch, &list, base_color, unique_name);
             
 			//push_fancy_string(scratch, &list, base_color, string_u8_litexpr(" testing"));
-			push_fancy_stringf(scratch, &list, base_color, " - Match: %d of %d", global_code_peek_selected_index,
+			push_fancy_stringf(scratch, &list, base_color, " - Match: %d of %d", global_code_peek_selected_index + 1,
                                global_code_peek_match_count);
             
 			draw_fancy_line(app, face_id, fcolor_zero(), &list, rect.p0);
@@ -848,6 +855,7 @@ skytrias_get_token_color_cpp(Token token){
             switch (token.sub_kind){
                 case TokenCppKind_ColonColon:
                 case TokenCppKind_ColonEq:
+                case TokenCppKind_Arrow:
 				{
 					color = defcolor_keyword;
 				}break;
@@ -898,6 +906,7 @@ skytrias_draw_cpp_token_colors(Application_Links *app, Text_Layout_ID text_layou
     }
 }
 
+// NOTE(Skytrias): paints all standard text leading to a '(' or '[' 
 function void
 skytrias_paint_functions(Application_Links *app, Buffer_ID buffer, Text_Layout_ID text_layout_id) {
     i64 keyword_length = 0;
@@ -916,7 +925,8 @@ skytrias_paint_functions(Application_Links *app, Buffer_ID buffer, Text_Layout_I
             }
             
             // get pos at paren
-            if (keyword_length != 0 && token->kind == TokenBaseKind_ParentheticalOpen) {
+            // NOTE(Skytrias): use token->sub_kind == TokenCppKind_ParenOp if only '(' should be used
+			if (keyword_length != 0 && token->kind == TokenBaseKind_ParentheticalOpen) {
                 end_pos = token->pos;
             }
             
@@ -936,6 +946,7 @@ skytrias_paint_functions(Application_Links *app, Buffer_ID buffer, Text_Layout_I
                 Range_i64 range = { 0 };
                 range.start = start_pos;
                 range.end = end_pos;
+				
 				// NOTE(Skytrias): use your own colorscheme her via fcolor_id(defcolor_*)
 				// NOTE(Skytrias): or set the color you'd like to use globally like i do
                 paint_text_color(app, text_layout_id, range, fcolor_resolve(FUNCTION_HIGHLIGHT_COLOR));
@@ -943,6 +954,136 @@ skytrias_paint_functions(Application_Links *app, Buffer_ID buffer, Text_Layout_I
                 end_pos = 0;
                 start_pos = 0;
             }
+            
+            if (!token_it_inc_all(&it)){
+                break;
+            }
+        }
+    }
+}
+
+// NOTE(Skytrias): paints all text leading up to a '!' in some color you like, nice for rust macros  
+function void
+skytrias_paint_rust_macros(Application_Links *app, Buffer_ID buffer, Text_Layout_ID text_layout_id) {
+    i64 keyword_length = 0;
+    i64 start_pos = 0;
+    i64 end_pos = 0;
+    
+	Token_Array array = get_token_array_from_buffer(app, buffer);
+    if (array.tokens != 0){
+        Range_i64 visible_range = text_layout_get_visible_range(app, text_layout_id);
+        i64 first_index = token_index_from_pos(&array, visible_range.first);
+        Token_Iterator_Array it = token_iterator_index(0, &array, first_index);
+        for (;;){
+            Token *token = token_it_read(&it);
+            if (token->pos >= visible_range.one_past_last){
+                break;
+            }
+            
+            // get pos at paren
+            if (keyword_length != 0 && token->sub_kind == TokenCppKind_Not) {
+                end_pos = token->pos + 1;
+            }
+            
+            // search for default text, count up the size
+            if (token->kind == TokenBaseKind_Identifier) {
+                if (keyword_length == 0) {
+                    start_pos = token->pos;
+                }
+                
+                keyword_length += 1;
+            } else {
+                keyword_length = 0;
+            }
+            
+            // color text 
+            if (start_pos != 0 && end_pos != 0) {
+                Range_i64 range = { 0 };
+                range.start = start_pos;
+                range.end = end_pos;
+				
+				// NOTE(Skytrias): use your own colorscheme her via fcolor_id(defcolor_*)
+				// NOTE(Skytrias): or set the color you'd like to use globally like i do
+                paint_text_color(app, text_layout_id, range, fcolor_resolve(STRUCT_HIGHLIGHT_COLOR));
+                
+                end_pos = 0;
+                start_pos = 0;
+            }
+            
+            if (!token_it_inc_all(&it)){
+                break;
+            }
+        }
+    }
+}
+
+// NOTE(Skytrias): not used! "can" show you dotted '.' places 
+function void
+skytrias_paint_rust_indent(Application_Links *app, Buffer_ID buffer, Text_Layout_ID text_layout_id) {
+    i64 start_pos = 0;
+    i64 end_pos = 0;
+      i64 keyword_length = 0;
+	b32 text_found = 0;
+	
+	Token_Array array = get_token_array_from_buffer(app, buffer);
+    if (array.tokens != 0){
+        Range_i64 visible_range = text_layout_get_visible_range(app, text_layout_id);
+        i64 first_index = token_index_from_pos(&array, visible_range.first);
+        Token_Iterator_Array it = token_iterator_index(0, &array, first_index);
+        for (;;){
+            Token *token = token_it_read(&it);
+            if (token->pos >= visible_range.one_past_last){
+                break;
+            }
+            
+			// get pos at paren
+            if (text_found && token->sub_kind == TokenCppKind_ParenOp) {
+                end_pos = token->pos;
+            }
+			
+            // search for default text, count up the size
+            if (token->kind == TokenBaseKind_Identifier || 
+				token->sub_kind == TokenCppKind_Dot
+				) {
+                if (keyword_length == 0) {
+					if (token->sub_kind == TokenCppKind_Dot) {
+						i64 pos = token->pos;
+					i64 line_num = get_line_number_from_pos(app, buffer, pos);
+					i64 line_start_pos = get_line_start_pos(app, buffer, line_num);
+						
+						// HACK(Skytrias): very bad, takes distance from pos to line start and sees if bytes are "close enough"
+					i64 sub_byte_range = pos - line_start_pos;
+					
+						if (sub_byte_range < 8) {
+                    start_pos = token->pos;
+					keyword_length += 1;
+							}
+					}
+				} else {
+				if (token->kind == TokenBaseKind_Identifier) {
+					keyword_length += 1;
+					text_found = 1;
+				}
+				}
+            } else {
+                keyword_length = 0;
+				text_found = 0;
+			}
+            
+            // color text 
+            if (start_pos != 0 && end_pos != 0) {
+                Range_i64 range = { 0 };
+                range.start = start_pos;
+                range.end = end_pos;
+				
+				// NOTE(Skytrias): use your own colorscheme her via fcolor_id(defcolor_*)
+				// NOTE(Skytrias): or set the color you'd like to use globally like i do
+                paint_text_color(app, text_layout_id, range, fcolor_resolve(STRUCT_HIGHLIGHT_COLOR));
+                
+                end_pos = 0;
+                start_pos = 0;
+				text_found = 0;
+			}
             
             if (!token_it_inc_all(&it)){
                 break;
@@ -971,6 +1112,7 @@ skytrias_render_buffer(Application_Links *app, View_ID view_id, Face_ID face_id,
             Comment_Highlight_Pair pairs[] = {
                 {string_u8_litexpr("NOTE"), finalize_color(defcolor_comment_pop, 0)},
                 {string_u8_litexpr("TODO"), finalize_color(defcolor_comment_pop, 1)},
+                {string_u8_litexpr("HACK"), finalize_color(HACK_HIGHLIGHT_COLOR, 1)},
             };
             draw_comment_highlights(app, buffer, text_layout_id,
                                     &token_array, pairs, ArrayCount(pairs));
@@ -989,7 +1131,7 @@ skytrias_render_buffer(Application_Links *app, View_ID view_id, Face_ID face_id,
         Color_Array colors = finalize_color_array(defcolor_back_cycle);
         draw_scope_highlight(app, buffer, text_layout_id, cursor_pos, colors.vals, colors.count);
     }
-    
+	
     // NOTE(rjf): Brace highlight
     {
         ARGB_Color colors[] =
@@ -1025,10 +1167,26 @@ skytrias_render_buffer(Application_Links *app, View_ID view_id, Face_ID face_id,
         Color_Array colors = finalize_color_array(defcolor_text_cycle);
         draw_paren_highlight(app, buffer, text_layout_id, cursor_pos, colors.vals, colors.count);
     }
-    
+	
     // NOTE(Skytrias): word highlight before braces ()
-    skytrias_paint_functions(app, buffer, text_layout_id);
+    //skytrias_paint_functions(app, buffer, text_layout_id);
+    skytrias_paint_rust_macros(app, buffer, text_layout_id);
+    //skytrias_paint_rust_indent(app, buffer, text_layout_id);
     
+	// testing
+	/*
+	{
+		i64 cursor_pos = view_get_cursor_pos(app, view_id);
+		
+		Range_i64 range = { 0 };
+		range.start = cursor_pos;
+		range.end = range.start + 10;
+		
+		//Rect_f32 rect = text_layout_character_on_screen(app, text_layout_id, range);
+		draw_rectangle(app, rect, 0.0f, 0xFF0000FF);
+	}
+	*/
+
     // NOTE(allen): Line highlight
     if (global_config.highlight_line_at_cursor && is_active_view){
         i64 line_number = get_line_number_from_pos(app, buffer, cursor_pos);
@@ -1202,18 +1360,18 @@ skytrias_set_bindings(Mapping *mapping)
     Bind(move_right_alpha_numeric_or_camel_boundary, KeyCode_Right, KeyCode_Alt);
     Bind(comment_line_toggle,        KeyCode_Semicolon, KeyCode_Control);
     Bind(word_complete,              KeyCode_Tab);
-    Bind(auto_indent_range,          KeyCode_Tab, KeyCode_Control);
-    Bind(auto_indent_line_at_cursor, KeyCode_Tab, KeyCode_Shift);
+    //Bind(word_complete_reverse,              KeyCode_Tab, KeyCode_Shift);
+    //Bind(auto_indent_range,          KeyCode_Tab, KeyCode_Control);
+    //Bind(auto_indent_line_at_cursor, KeyCode_Tab, KeyCode_Shift);
     Bind(word_complete_drop_down,    KeyCode_Tab, KeyCode_Shift, KeyCode_Control);
-    Bind(write_block,                KeyCode_R, KeyCode_Alt);
+	// NOTE(Skytrias): use hack instead of write_block
+    Bind(write_hack,                KeyCode_R, KeyCode_Alt);
     Bind(write_todo,                 KeyCode_T, KeyCode_Alt);
     Bind(write_note,                 KeyCode_Y, KeyCode_Alt);
     Bind(list_all_locations_of_type_definition,               KeyCode_D, KeyCode_Alt);
     Bind(list_all_locations_of_type_definition_of_identifier, KeyCode_T, KeyCode_Alt, KeyCode_Shift);
-    Bind(open_long_braces,           KeyCode_LeftBracket, KeyCode_Control);
-    Bind(open_long_braces_semicolon, KeyCode_LeftBracket, KeyCode_Control, KeyCode_Shift);
-    Bind(open_long_braces_break,     KeyCode_RightBracket, KeyCode_Control, KeyCode_Shift);
-    Bind(select_surrounding_scope,   KeyCode_LeftBracket, KeyCode_Alt);
+    
+	Bind(select_surrounding_scope,   KeyCode_LeftBracket, KeyCode_Alt);
     Bind(select_surrounding_scope_maximal, KeyCode_LeftBracket, KeyCode_Alt, KeyCode_Shift);
     Bind(select_prev_scope_absolute, KeyCode_RightBracket, KeyCode_Alt);
     Bind(select_prev_top_most_scope, KeyCode_RightBracket, KeyCode_Alt, KeyCode_Shift);
@@ -1221,7 +1379,6 @@ skytrias_set_bindings(Mapping *mapping)
     Bind(select_next_scope_after_current, KeyCode_Quote, KeyCode_Alt, KeyCode_Shift);
     Bind(place_in_scope,             KeyCode_ForwardSlash, KeyCode_Alt);
     Bind(delete_current_scope,       KeyCode_Minus, KeyCode_Alt);
-    Bind(if0_off,                    KeyCode_I, KeyCode_Alt);
     Bind(open_file_in_quotes,        KeyCode_1, KeyCode_Alt);
     Bind(open_matching_file_cpp,     KeyCode_2, KeyCode_Alt);
     
@@ -1333,10 +1490,12 @@ custom_layer_init(Application_Links *app){
     
     // NOTE(allen): default hooks and command maps
     set_all_default_hooks(app);
+	// NOTE(Skytrias): you have to disable the calls in default_hooks.cpp i think
     set_custom_hook(app, HookID_RenderCaller, skytrias_render_caller);
-    mapping_init(tctx, &framework_mapping);
-    skytrias_set_bindings(&framework_mapping);
     
+	mapping_init(tctx, &framework_mapping);
+    skytrias_set_bindings(&framework_mapping);
+	
     skytrias_color_scheme(app);
 }
 
@@ -1411,4 +1570,3 @@ skytrias_draw_file_bar(Application_Links *app, View_ID view_id, Buffer_ID buffer
 #endif //FCODER_DEFAULT_BINDINGS
 
 // BOTTOM
-
