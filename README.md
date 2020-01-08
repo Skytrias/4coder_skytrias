@@ -1,7 +1,7 @@
 # 4files
 ![4coder Nord](https://github.com/Skytrias/4files/blob/master/previews/nord_theme.png)
 
-Here are my customizations to [4coder](http://4coder.net/). These also include customizations from other ppl
+Here are my customizations to [4coder](http://4coder.net/). These also include customizations from other ppl.
 Feel free to take a look at the previews and pick out what ever you like into your own customization layer.
 
 ## Features: 
