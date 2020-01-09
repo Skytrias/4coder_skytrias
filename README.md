@@ -4,11 +4,12 @@
 Here are my customizations to [4coder](http://4coder.net/). These also include customizations from other ppl.
 Feel free to take a look at the previews and pick out what ever you like into your own customization layer.
 
-## Features: 
-### Functions/Arrays color highlighting
-![function_highlight](https://github.com/Skytrias/4files/blob/master/previews/function_highlight.gif)
+# Features (in order of significance): 
+## Snippet Autocompletion when writing
+![snippet_autocompletion](https://github.com/Skytrias/4files/blob/master/previews/automatic_snippet_completion.gif)
 
-### (Rust) Macro color highlighting
+## Functions/Arrays color highlighting / (Rust) macro colord highlighting
+![function_highlight](https://github.com/Skytrias/4files/blob/master/previews/function_highlight.gif)
 
 ## Smooth cursor from ryan_fleury, added Heart beat animation
 ![smooth_cursor](https://github.com/Skytrias/4files/blob/master/previews/smooth_cursor.gif)
@@ -28,12 +29,11 @@ Feel free to take a look at the previews and pick out what ever you like into yo
 ## Rust snippets
 ![rust_snippets](https://github.com/Skytrias/4files/blob/master/previews/rust_snippets.gif)
 
-## Nord color theme *see above*
-
 ## Macro recording highlighting
 ![macro_recording](https://github.com/Skytrias/4files/blob/master/previews/macro_recording_highlight.gif)
 
-## Minor features:
+## Minor Features:
+* Nord color theme *see above*
 * "HACK:"" is highlighted now
 * Faster scroll speed like in Alpha
 
