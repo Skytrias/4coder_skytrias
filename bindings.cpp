@@ -66,7 +66,8 @@ skytrias_set_bindings(Mapping *mapping)
     Bind(move_left,              KeyCode_Left);
     Bind(move_right,             KeyCode_Right);
     Bind(seek_end_of_line,       KeyCode_End);
-    Bind(page_up,                KeyCode_PageUp);
+    // TODO(Skytrias): doesnt work?
+	Bind(page_up,                KeyCode_PageUp);
     Bind(page_down,              KeyCode_PageDown);
     Bind(goto_beginning_of_file, KeyCode_PageUp, KeyCode_Control);
     Bind(goto_end_of_file,       KeyCode_PageDown, KeyCode_Control);
@@ -152,6 +153,6 @@ skytrias_set_bindings(Mapping *mapping)
         Bind(fleury_code_peek,          KeyCode_Alt, KeyCode_Control);
         Bind(fleury_close_code_peek,    KeyCode_Escape);
         Bind(fleury_code_peek_go,       KeyCode_Return, KeyCode_Control);
-        Bind(skytrias_backwards_code_peek, KeyCode_Delete, KeyCode_Control);
+        Bind(skytrias_backwards_code_peek, KeyCode_Tab, KeyCode_Control);
     }
 }

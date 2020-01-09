@@ -37,6 +37,4 @@ custom_layer_init(Application_Links *app){
     skytrias_color_scheme(app);
 }
 
-
-
 #endif //FCODER_DEFAULT_BINDINGS
