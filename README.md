@@ -9,7 +9,6 @@ Feel free to take a look at the previews and pick out what ever you like into yo
 ![function_highlight](https://github.com/Skytrias/4files/blob/master/previews/function_highlight.gif)
 
 ### (Rust) Macro color highlighting
-![macro_recording](https://github.com/Skytrias/4files/blob/master/previews/macro_recording_highlight.gif)
 
 ## Smooth cursor from ryan_fleury, added Heart beat animation
 ![smooth_cursor](https://github.com/Skytrias/4files/blob/master/previews/smooth_cursor.gif)
