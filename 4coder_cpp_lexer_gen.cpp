@@ -21,7 +21,7 @@ build_language_model(void){
     sm_char_name('!', "Not");
     sm_char_name('&', "And");
     sm_char_name('|', "Or");
-    sm_char_name('%', "Mod");
+    sm_char_name('%', "Modulo");
     sm_char_name('^', "Xor");
     sm_char_name('?', "Ternary");
     sm_char_name('/', "Div");
@@ -82,7 +82,7 @@ build_language_model(void){
     
     // CPP Operators
     Operator_Set *main_ops = sm_begin_op_set();
-    
+	
     sm_select_base_kind(TokenBaseKind_ScopeOpen);
     sm_op("{");
     sm_select_base_kind(TokenBaseKind_ScopeClose);
@@ -98,8 +98,7 @@ build_language_model(void){
     sm_op(":");
     sm_select_base_kind(TokenBaseKind_Operator);
     sm_op("...");
-    
-    sm_op("::");
+	
     sm_op("++");
     sm_op("--");
     sm_op(".");
@@ -137,6 +136,8 @@ build_language_model(void){
     sm_op("||");
     sm_op("?");
     sm_op("=");
+	sm_op(":=");
+    sm_op("::");
     sm_op("+=");
     sm_op("-=");
     sm_op("*=");
@@ -161,71 +162,164 @@ build_language_model(void){
     Keyword_Set *main_keys = sm_begin_key_set("main_keys");
     
     sm_select_base_kind(TokenBaseKind_Keyword);
-    sm_key("Void");
-    sm_key("Bool");
-    sm_key("Char");
+	
+	/*
+	ODIN
+
+sm_key("Bool");
+	sm_key("B8");
+	sm_key("B16");
+	sm_key("B32");
+	sm_key("B64");
+	
+    sm_key("F32");
+	sm_key("F64");
+	
     sm_key("Int");
-    sm_key("Float");
-    sm_key("Double");
-    sm_key("Long");
-    sm_key("Short");
-    sm_key("Unsigned");
-    sm_key("Signed");
-    sm_key("Const");
-    sm_key("Volatile");
-    sm_key("Asm");
-    sm_key("Break");
-    sm_key("Case");
-    sm_key("Catch");
-    sm_key("Continue");
-    sm_key("Default");
-    sm_key("Do");
-    sm_key("Else");
-    sm_key("For");
-    sm_key("Goto");
-    sm_key("If");
-    sm_key("Return");
-    sm_key("Switch");
-    sm_key("Try");
-    sm_key("While");
-    sm_key("StaticAssert", "static_assert");
-    sm_key("ConstCast", "const_cast");
-    sm_key("DynamicCast", "dynamic_cast");
-    sm_key("ReinterpretCast", "reinterpret_cast");
-    sm_key("StaticCast", "static_cast");
-    sm_key("Class");
-    sm_key("Enum");
-    sm_key("Struct");
-    sm_key("Typedef");
-    sm_key("Union");
-    sm_key("Template");
-    sm_key("Typename");
-    sm_key("Friend");
-    sm_key("Namespace");
-    sm_key("Private");
-    sm_key("Protected");
-    sm_key("Public");
-    sm_key("Using");
-    sm_key("Extern");
-    sm_key("Export");
-    sm_key("Inline");
-    sm_key("Static");
-    sm_key("Virtual");
-    sm_key("AlignAs");
-    sm_key("Explicit");
-    sm_key("NoExcept");
-    sm_key("NullPtr");
-    sm_key("Operator");
-    sm_key("Register");
-    sm_key("This");
-    sm_key("ThreadLocal", "thread_local");
-    sm_key("SizeOf");
-    sm_key("AlignOf");
-    sm_key("DeclType");
-    sm_key("TypeID");
-    sm_key("New");
-    sm_key("Delete");
+	sm_key("I8");
+	sm_key("I16");
+	sm_key("I32");
+	sm_key("I64");
+	sm_key("I128");
+	
+    sm_key("Uint");
+	sm_key("U8");
+	sm_key("U16");
+	sm_key("U32");
+	sm_key("U64");
+	
+	sm_key("Rectangle");
+	sm_key("vector2", "Vector2");
+	sm_key("vector3", "Vector3");
+	sm_key("vector4", "Vector4");
+	sm_key("matrix4", "Matrix4");
     
+	sm_key("Byte");
+	sm_key("Rune");
+	sm_key("String");
+	sm_key("Cstring");
+	sm_key("Nil");
+	sm_key("Rawptr");
+	sm_key("Typeid");
+	sm_key("Any");
+    
+    sm_key("Cast");
+    sm_key("Transmute");
+    sm_key("Proc");
+    sm_key("Inline");
+    sm_key("Defer");
+    sm_key("Import");
+    sm_key("Package");
+    sm_key("Enum");
+    sm_key("Extern");
+    sm_key("Switch");
+    sm_key("Case");
+    sm_key("Return");
+    sm_key("Using");
+    sm_key("Struct");
+    sm_key("Where");
+    sm_key("Union");
+    sm_key("Foreign");
+    sm_key("When");
+    sm_key("In");
+    sm_key("Notin");
+    sm_key("Bit_set");
+    
+    sm_key("Assert");
+    sm_key("Panic");
+    sm_key("Delete");
+    sm_key("Size_of");
+    
+    sm_key("Break");
+    sm_key("Continue");
+    sm_key("Do");
+    sm_key("If");
+    sm_key("Else");
+    sm_key("While");
+    sm_key("For");
+    */
+    sm_key("Typedef");
+
+	// rust
+	// default
+	sm_key("Bool");
+    sm_key("F32");
+	sm_key("F64");
+    sm_key("I32");
+	sm_key("I64");
+	sm_key("U32");
+	sm_key("U64");
+	sm_key("Usize");
+	sm_key("Isize");
+	sm_key("Str");
+	sm_key("String");
+	
+	// own
+	sm_key("vec2", "Vec2");
+	sm_key("vec3", "Vec3");
+	sm_key("vec4", "Vec4");
+	sm_key("app", "App");
+	sm_key("vec", "Vec");
+	sm_key("hashmap", "HashMap");
+	sm_key("C_void");
+	
+	// strict
+	sm_key("As");
+	sm_key("Break");
+	sm_key("Const");
+	sm_key("Continue");
+	sm_key("Crate");
+	sm_key("Enum");
+	sm_key("Extern");
+	sm_key("Fn");
+	sm_key("For");
+	sm_key("Impl");
+	sm_key("In");
+	sm_key("Let");
+	sm_key("Loop");
+	sm_key("Match");
+	sm_key("Mod");
+	sm_key("Move");
+	sm_key("Mut");
+	sm_key("Pub");
+	sm_key("Ref");
+	sm_key("Return");
+	sm_key("self", "Self");
+	sm_key("Static");
+	sm_key("Struct");
+	sm_key("Super");
+	sm_key("Trait");
+	sm_key("Unsafe");
+	sm_key("Use");
+	sm_key("Where");
+	sm_key("While");
+	sm_key("Self");
+    sm_key("If");
+    sm_key("Else");
+    
+	// 2018
+	sm_key("Async");
+	sm_key("Await");
+	sm_key("Dyn");
+	
+	// reserved
+	sm_key("Abstract");
+	sm_key("Union");
+	sm_key("Become");
+	sm_key("Box");
+	sm_key("Do");
+	sm_key("Final");
+	sm_key("Macro");
+	sm_key("Override");
+	sm_key("Priv");
+	sm_key("Typeof");
+	sm_key("Unsized");
+	sm_key("Virtual");
+	sm_key("Yield");
+	sm_key("Type");
+	// 2018
+	sm_key("Try");
+	
     sm_select_base_kind(TokenBaseKind_LiteralInteger);
     sm_key("LiteralTrue", "true");
     sm_key("LiteralFalse", "false");
@@ -263,6 +357,7 @@ build_language_model(void){
     sm_key("PPDefined", "defined");
     
     // State Machine
+	
     State *root = sm_begin_state_machine();
     
     Flag *is_hex = sm_add_flag(FlagResetRule_AutoZero);
