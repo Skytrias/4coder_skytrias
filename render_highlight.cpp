@@ -17,7 +17,7 @@ global View_ID global_previous_view_id = {};
 // additional nord colors
 static FColor FUNCTION_HIGHLIGHT_COLOR = fcolor_argb(0.533f, 0.752f, 0.815f, 1.0f);
 static FColor STRUCT_HIGHLIGHT_COLOR = fcolor_argb(0.749f, 0.38f, 0.416f, 1.0f);
-static u32 HACK_HIGHLIGHT_COLOR = 0xFFd08770;
+static u32 HACK_HIGHLIGHT_COLOR = 0xd08770FF;
 static u32 SNIPPET_HIGHLIGHT_COLOR = 0x33ebcb8b;
 
 // NOTE(Skytrias): custom growth animation added to ryan squishy cursor
@@ -441,7 +441,6 @@ skytrias_get_token_color_cpp(Token token){
         {
             switch (token.sub_kind){
                 case TokenCppKind_ColonColon:
-                case TokenCppKind_ColonEq:
                 case TokenCppKind_Arrow:
 				{
 					color = defcolor_keyword;
@@ -733,6 +732,9 @@ function void skytrias_automatic_snippet_inserting(Application_Links *app, View_
 		if (c == ' ' || 
 			c == ',' || 
 			c == '.' || 
+			c == ':' || 
+			c == ';' || 
+			c == '\t' || 
 			c == '\n') {
 			global_snippet_cursor_range.start = cursor_pos;
 		}
