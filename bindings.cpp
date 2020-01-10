@@ -66,6 +66,7 @@ skytrias_set_bindings(Mapping *mapping)
     Bind(move_left,              KeyCode_Left);
     Bind(move_right,             KeyCode_Right);
     Bind(seek_end_of_line,       KeyCode_End);
+    Bind(seek_beginning_of_line, KeyCode_Home);
     // TODO(Skytrias): doesnt work?
 	Bind(page_up,                KeyCode_PageUp);
     Bind(page_down,              KeyCode_PageDown);
