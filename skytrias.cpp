@@ -34,7 +34,6 @@ custom_layer_init(Application_Links *app){
     
 	mapping_init(tctx, &framework_mapping);
     skytrias_set_bindings(&framework_mapping);
-    skytrias_color_scheme(app);
 }
 
 #endif //FCODER_DEFAULT_BINDINGS

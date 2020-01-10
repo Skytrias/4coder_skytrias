@@ -1,13 +1,35 @@
-{"ifel", "if {\n\n} else {\n\n}", 3, 6},
-{"fori",     "for i in 0..  {\n\n}\n", 13, 16},
-	{"forj",     "for j in 0..  {\n\n}\n", 13, 16},
-	{"forx",     "for x in 0..  {\n\n}\n", 13, 16},
-	{"fory",     "for y in 0..  {\n\n}\n", 13, 16},
-	{"forn",     "for   in  {\n\n}\n", 4, 9},
-	{"///",    "////////////////////////////////", 32, 32},
-	{"struct",     "pub struct  {\n\n}\n", 11, 14},
-	{"fn",     "pub fn (&mut self) {\n\n}\n", 7, 17},
-	{"impl",     "impl  {\npub fn  () {\n\n}\n}\n", 5, 15},
-	{"def",     "impl Default for  {\nfn default() -> Self {\nSelf {\n\n}\n}\n}\n", 17, 50},
-	{"new",     "impl  {\npub fn new() -> Self {\nSelf {\n\n}\n}\n}\n", 5, 38},
-	{"appx", "app: &mut App, ", 15, 0},
+//{"///",    "////////////////////////////////", 32, 32},
+
+// control based
+{"ifel", "if  {\n\n} else {\n\n}", 2, 6},
+{"iflet", "if let Some() =  {\n\n}", 12, 16},
+
+// for variants
+{"fori",     "for i in 0.. {\n\n}\n", 12, 15},
+{"forj",     "for j in 0.. {\n\n}\n", 12, 15},
+{"forx",     "for x in 0.. {\n\n}\n", 12, 15},
+{"fory",     "for y in 0.. {\n\n}\n", 12, 15},
+{"forn",     "for   in  {\n\n}\n", 4, 9},
+
+// y and x versions of the same things
+{"fny",     "pub fn (&mut self) {\n\n}\n", 7, 17},
+{"fnx",     "pub fn (&self) {\n\n}\n", 7, 14},
+{"defy",     "impl Default for  {\nfn default() -> Self {\nSelf {\n\n}\n}\n}\n", 17, 50},
+{"defx",     "Default::default()", 18, 0},
+{"newy",     "impl  {\npub fn new() -> Self {\nSelf {\n\n..Default::default()\n}\n}\n}\n", 5, 38},
+{"appy", "app: &mut App, ", 15, 0},
+{"appx", "app: &App, ", 11, 0},
+{"mody", "mod ;\npub use self::::*;\n", 4, 20},
+
+// default ones that you rarely write or deviate from
+{"print", "println!();", 9, 0},
+{"crate", "use crate::::*;", 11, 14},
+{"match", "match  {\n => \n_ => {}\n}\n", 6, 9},
+{"impl",     "impl  {\npub fn () {\n\n}\n}\n", 4, 14},
+{"struct",     "pub struct  {\n\n}\n", 11, 14},
+{"enum",     "pub enum  {\n\n}\n", 9, 12},
+{"trait",     "pub trait  {\n\n}\n", 10, 13},
+
+// special ones
+{"derive", "#[derive()]", 9, 0},
+{"allow", "#[allow()]", 8, 0},
