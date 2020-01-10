@@ -37,16 +37,22 @@ Feel free to take a look at the previews and pick out what ever you like into yo
 * "HACK:"" is highlighted now
 * Faster scroll speed like in Alpha
 
-## How to use (Windows):
+## How my setup works (Windows):
 1. Clone this repository to your `4coder/custom` folder and name it `skytrias` in my case
-2. Run a x64 terminal where `cl` exists *(Build tools from VS2019)*
-3. I.e. call the build `.bat` file from the root `4coder/` like `custom\skytrias\build.bat` 
-    * *(if your folder has a different name, rename it or contents of the bat files)*
-4. 4ed.exe has to be closed when trying to run any .bat file, otherwhise 4ed can't rebuild the `.dll` file 
+2. Replace some existing `4coder_*` files with my changed versions of them in the right places
+ * you might have to fix a few things if they don't exist, `4coder_cpp_lex_gen` but needs to run `lex.bat`*
+3. Run a x64 terminal where `cl` exists *(Build tools from VS2019)*
+4. I.e. call the build `.bat` file from the root `4coder/` like `custom\skytrias\build.bat` 
+    * *(if your folder has a different name, rename it or contents of the `.bat` files)*
+4. In `4coder/custom/4coder_default_hooks.cpp` disable the hooks that are overwritten in your main file -> see `skytrias.cpp` in my case
+5. You will probably have to fix a few changed functions parameters because they may have been extended.
+6. `4ed.exe` has to be closed when trying to run any `.bat` file, otherwhise 4ed can't rebuild the `.dll` file 
 
-## build.bat
-Rebuilds the 4coder/custom_4ed.dll with all + your own `.cpp` file specified
-
-## lex.bat
-Rebuilds the lexer, calls one_time.exe, and rebuilds everything
+## .Bat file
+* build.bat: Rebuilds `4coder/custom_4ed.dll` in debug mode
+* Rebuilds `4coder/custom_4ed.dll` in release mode for best performance
+* Rebuilds the lexer into the `4coder\custom\generated` folder, calls one_time.exe, and rebuilds everything
     * The lexer speficies the words that will be highlighted in 4coder
+
+## I suggest
+Looking through each of the features, pick up what you think is cool or might be helpful to you. Extend the features you want, or send an issue / pull request.
