@@ -20,12 +20,14 @@
 {"appy", "app: &mut App, ", 15, 0},
 {"appx", "app: &App, ", 11, 0},
 {"mody", "mod ;\npub use self::::*;\n", 4, 20},
+{"imply",     "impl  {\npub fn () {\n\n}\n}\n", 5, 15},
+{"implx",     "impl  for  {\npub fn () {\n\n}\n}\n", 5, 10},
+{"cratey", "use crate::::*;", 11, 14},
+{"cratex", "crate::::();", 7, 9},
 
 // default ones that you rarely write or deviate from
 {"print", "println!();", 9, 0},
-{"crate", "use crate::::*;", 11, 14},
 {"match", "match  {\n => \n_ => {}\n}\n", 6, 9},
-{"impl",     "impl  {\npub fn () {\n\n}\n}\n", 4, 14},
 {"struct",     "pub struct  {\n\n}\n", 11, 14},
 {"enum",     "pub enum  {\n\n}\n", 9, 12},
 {"trait",     "pub trait  {\n\n}\n", 10, 13},

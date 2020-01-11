@@ -4,7 +4,7 @@ skytrias_set_bindings(Mapping *mapping)
 {
     MappingScope();
     SelectMapping(mapping);
-    
+	
     SelectMap(mapid_global);
     BindCore(default_startup, CoreCode_Startup);
     BindCore(default_try_exit, CoreCode_TryExit);
@@ -51,10 +51,12 @@ skytrias_set_bindings(Mapping *mapping)
     Bind(exit_4coder,          KeyCode_F4, KeyCode_Alt);
     BindMouseWheel(mouse_wheel_scroll);
     BindMouseWheel(mouse_wheel_change_face_size, KeyCode_Control);
-    
+	
     SelectMap(mapid_file);
     ParentMap(mapid_global);
-    BindTextInput(write_text_input);
+	
+    // NOTE(Skytrias): used for auto snippet
+	BindTextInput(st_write_text_input);
     BindMouse(click_set_cursor_and_mark, MouseCode_Left);
     BindMouseRelease(click_set_cursor, MouseCode_Left);
     BindCore(click_set_cursor_and_mark, CoreCode_ClickActivateView);
@@ -117,10 +119,12 @@ skytrias_set_bindings(Mapping *mapping)
     Bind(if_read_only_goto_position,  KeyCode_Return);
     Bind(if_read_only_goto_position_same_panel, KeyCode_Return, KeyCode_Shift);
     Bind(view_jump_list_with_lister,  KeyCode_Period, KeyCode_Control, KeyCode_Shift);
-    
+	
     SelectMap(mapid_code);
     ParentMap(mapid_file);
-    BindTextInput(write_text_and_auto_indent);
+    
+	// NOTE(Skytrias): used for auto snippet
+	BindTextInput(st_write_text_and_auto_indent);
     Bind(move_left_alpha_numeric_boundary,           KeyCode_Left, KeyCode_Control);
     Bind(move_right_alpha_numeric_boundary,          KeyCode_Right, KeyCode_Control);
     Bind(move_left_alpha_numeric_or_camel_boundary,  KeyCode_Left, KeyCode_Alt);
@@ -137,7 +141,7 @@ skytrias_set_bindings(Mapping *mapping)
     Bind(write_note,                 KeyCode_Y, KeyCode_Alt);
     Bind(list_all_locations_of_type_definition,               KeyCode_D, KeyCode_Alt);
     Bind(list_all_locations_of_type_definition_of_identifier, KeyCode_T, KeyCode_Alt, KeyCode_Shift);
-    
+	
 	Bind(select_surrounding_scope,   KeyCode_LeftBracket, KeyCode_Alt);
     Bind(select_surrounding_scope_maximal, KeyCode_LeftBracket, KeyCode_Alt, KeyCode_Shift);
     Bind(select_prev_scope_absolute, KeyCode_RightBracket, KeyCode_Alt);
@@ -148,7 +152,7 @@ skytrias_set_bindings(Mapping *mapping)
     Bind(delete_current_scope,       KeyCode_Minus, KeyCode_Alt);
     Bind(open_file_in_quotes,        KeyCode_1, KeyCode_Alt);
     Bind(open_matching_file_cpp,     KeyCode_2, KeyCode_Alt);
-    
+	
     // NOTE(Skytrias): custom bindings
     {
         Bind(fleury_code_peek,          KeyCode_Alt, KeyCode_Control);

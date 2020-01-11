@@ -7,18 +7,11 @@ static f32 global_cursor_counter = 0.0f;
 static u32 global_cursor_times = 0;
 static Vec2_f32 global_smooth_cursor_position = {0};
 
-// NOTE(Skytrias): sometimes 2 words will be selected!!! dunno why
-// used for snippet automation 
-global b32 global_snippet_word_highlight_on = 1; // NOTE(Skytrias): DISABLE this if you dont want words to be highlighted, this just helps a lot to see bugs appear, 
-global b32 global_snippet_cursor_set = 0;
-global Range_i64 global_snippet_cursor_range = {};
-global View_ID global_previous_view_id = {};
-
 // additional nord colors
-static FColor FUNCTION_HIGHLIGHT_COLOR = fcolor_argb(0.533f, 0.752f, 0.815f, 1.0f);
-static FColor STRUCT_HIGHLIGHT_COLOR = fcolor_argb(0.749f, 0.38f, 0.416f, 1.0f);
+static u32 FUNCTION_HIGHLIGHT_COLOR = 0xFF25B2BC;
+static u32 MACRO_HIGHLIGHT_COLOR = 0xFFB877DB;
 static u32 HACK_HIGHLIGHT_COLOR = 0xd08770FF;
-static u32 SNIPPET_HIGHLIGHT_COLOR = 0x33ebcb8b;
+static u32 STRUCT_HIGHLIGHT_COLOR = 0xFF99db76;
 
 // NOTE(Skytrias): custom growth animation added to ryan squishy cursor
 static void
@@ -440,7 +433,12 @@ skytrias_get_token_color_cpp(Token token){
         default:
         {
             switch (token.sub_kind){
-                case TokenCppKind_ColonColon:
+                case TokenCppKind_And:
+                case TokenCppKind_Or:
+                case TokenCppKind_AndAnd:
+                case TokenCppKind_OrOr:
+				case TokenCppKind_ColonColon:
+                case TokenCppKind_Colon:
                 case TokenCppKind_Arrow:
 				{
 					color = defcolor_keyword;
@@ -535,7 +533,7 @@ skytrias_paint_functions(Application_Links *app, Buffer_ID buffer, Text_Layout_I
 				
 				// NOTE(Skytrias): use your own colorscheme her via fcolor_id(defcolor_*)
 				// NOTE(Skytrias): or set the color you'd like to use globally like i do
-                paint_text_color(app, text_layout_id, range, fcolor_resolve(FUNCTION_HIGHLIGHT_COLOR));
+                paint_text_color(app, text_layout_id, range, FUNCTION_HIGHLIGHT_COLOR);
                 
                 end_pos = 0;
                 start_pos = 0;
@@ -590,7 +588,7 @@ skytrias_paint_rust_macros(Application_Links *app, Buffer_ID buffer, Text_Layout
 				
 				// NOTE(Skytrias): use your own colorscheme her via fcolor_id(defcolor_*)
 				// NOTE(Skytrias): or set the color you'd like to use globally like i do
-                paint_text_color(app, text_layout_id, range, fcolor_resolve(STRUCT_HIGHLIGHT_COLOR));
+                paint_text_color(app, text_layout_id, range, MACRO_HIGHLIGHT_COLOR);
                 
                 end_pos = 0;
                 start_pos = 0;
@@ -664,7 +662,7 @@ skytrias_paint_rust_indent(Application_Links *app, Buffer_ID buffer, Text_Layout
 				
 				// NOTE(Skytrias): use your own colorscheme her via fcolor_id(defcolor_*)
 				// NOTE(Skytrias): or set the color you'd like to use globally like i do
-                paint_text_color(app, text_layout_id, range, fcolor_resolve(STRUCT_HIGHLIGHT_COLOR));
+                paint_text_color(app, text_layout_id, range, MACRO_HIGHLIGHT_COLOR);
                 
                 end_pos = 0;
                 start_pos = 0;
@@ -678,126 +676,80 @@ skytrias_paint_rust_indent(Application_Links *app, Buffer_ID buffer, Text_Layout
     }
 }
 
-function void skytrias_automatic_snippet_inserting(Application_Links *app, View_ID view_id, Buffer_ID buffer, Face_ID face_id, Text_Layout_ID text_layout_id) {
-	// TODO(Skytrias): need some way to turn of detection when search or anything steals input
+static void skytrias_paint_tokens(Application_Links *app, Buffer_ID buffer, Text_Layout_ID text_layout_id)
+{
+    Scratch_Block scratch(app);
+    FColor col = {0};
 	
-	// TODO(Skytrias): only get snippet count at init, not each frame
-	i32 snippet_count = ArrayCount(default_snippets);
-	
-	// dont allow snippet autocomplete when no existasdasda
-	if (snippet_count < 0 && suppressing_mouse) {
-		global_snippet_cursor_set = false;
-		return;
-	}
-	
-	i64 cursor_pos = view_get_cursor_pos(app, view_id);
-	
-	// get *keyboard* buffer most recent event
-	Buffer_ID keyboard_log_buffer = get_keyboard_log_buffer(app);
-	Scratch_Block scratch(app);
-	i64 keyboard_cursor_pos = buffer_get_size(app, keyboard_log_buffer);
-	i64 macro_line_number = get_line_number_from_pos(app, keyboard_log_buffer, keyboard_cursor_pos);
-	String_Const_u8 macro_string_line = push_buffer_line(app, scratch, keyboard_log_buffer, macro_line_number - 1);
-	Input_Event event = parse_keyboard_event(scratch, macro_string_line);
-	
-	// reset at certain actions
-	if (event.kind == InputEventKind_MouseButton ||
-		event.kind == InputEventKind_MouseButtonRelease ||
-		event.kind == InputEventKind_MouseWheel ||
-		event.kind == InputEventKind_MouseMove ||
-		event.kind == InputEventKind_Core ||
-		event.kind == InputEventKind_CustomFunction ||
-		// any modifier keys pressed
-		is_modified(&event) ||
-		// has the view changed
-		global_previous_view_id != view_id
-		) {
-		// event.kind == InputEventKind_MouseMove || 
-		global_snippet_cursor_set = false;
-	}
-	
-	// only allow static text insert to be ranged, dont allow modifiers
-	if (event.kind == InputEventKind_TextInsert){
-		if (!global_snippet_cursor_set) {
-			global_snippet_cursor_set = true;
-			global_previous_view_id = view_id;
+    Token_Array array = get_token_array_from_buffer(app, buffer);
+    if (array.tokens != 0){
+        Range_i64 visible_range = text_layout_get_visible_range(app, text_layout_id);
+        i64 first_index = token_index_from_pos(&array, visible_range.first);
+        Token_Iterator_Array it = token_iterator_index(0, &array, first_index);
+		
+        for (;;){
+            Token *token = token_it_read(&it);
 			
-			// sometimes input is faster, for safety always take one earlier, exclude whitespace later
-			global_snippet_cursor_range.start = cursor_pos - 1;
-		}
-		
-		// reset start if whitespace
-		u8 c = string_get_character(event.text.string, 0);
-		// NOTE(Skytrias): customize this to stop at whatever you want with a bit of accuracy
-		if (c == ' ' || 
-			c == ',' || 
-			c == '.' || 
-			c == ':' || 
-			c == ';' || 
-			c == '\t' || 
-			c == '\n') {
-			global_snippet_cursor_range.start = cursor_pos;
-		}
-	} 
-	
-	if (global_snippet_cursor_set) {
-		global_snippet_cursor_range.end = cursor_pos;
-		
-		// visual help
-		if (global_snippet_word_highlight_on) {
-			// EXPENSIVE draw_character_block(app, text_layout_id, global_snippet_cursor_range, 4.0f, SNIPPET_HIGHLIGHT_COLOR);
+            if (token->pos >= visible_range.one_past_last){
+                break;
+            }
+            // TODO(stefan): hack
+            b32 valid = true;
+            if(token->sub_kind == TokenCppKind_Dot){
+                token_it_inc_all(&it);
+                Token *peek = token_it_read(&it);
+                String_Const_u8 token_as_string = push_token_lexeme(app, scratch, buffer, token);
+                if(peek->kind == TokenBaseKind_Identifier &&
+                   peek->sub_kind == TokenCppKind_Identifier){
+                    //token_it_dec_all(&it);
+                    valid = false;
+                }
+            }
 			
-			// Simple rect 
-			Rect_f32 character_rect = text_layout_character_on_screen(app, text_layout_id, global_snippet_cursor_range.start);
-			Face_Metrics face_metrics = get_face_metrics(app, face_id);
-			f32 x = character_rect.x0;
-			f32 y = character_rect.y0;
-			f32 w = character_rect.x0 + (global_snippet_cursor_range.end - global_snippet_cursor_range.start) * face_metrics.space_advance;
-			f32 h = character_rect.y1;
-			Rect_f32 rect = { x, y, w, h };
-			draw_rectangle(app, rect, 4.0f, SNIPPET_HIGHLIGHT_COLOR);
-		}
-		
-		String_Const_u8 result = string_u8_empty;
-		
-		// TODO(Skytrias): simplify?
-		i64 length = range_size(global_snippet_cursor_range);
-		if (length > 0){
-			Temp_Memory restore_point = begin_temp(scratch);
-			u8 *memory = push_array(scratch, u8, length);
-			if (buffer_read_range(app, buffer, global_snippet_cursor_range, memory)){
-				result = SCu8(memory, length);
-				//draw_string(app, face_id, result, Vec2_f32 { 50.0f, 50.0f }, 0xFFFF0000);
-			} else{
-				end_temp(restore_point);
-			}
-		}
-		
-		if (result.size > 0) {
-			// if any whitespace left, cut them out and inc start by 1
-			result = string_skip_whitespace(result);
+			//skytrias_get_token_color_cpp(token);
 			
-			// TODO(Skytrias): fix whitespace accounted in range?
 			/*
-			if (string_find_first_whitespace(result) != 0) {
-				global_log_cursor_range.start += 1;
-			}
-			*/
+            if(global_hex_colors){
+                stefan_paint_hex_tokens(app, buffer, text_layout_id, token);
+            }*/
 			
-			// loop through snippet names and match with result 
-			Snippet *snippet = default_snippets;
-			for (i32 i = 0; i < snippet_count; i += 1, snippet += 1){
-				if (string_match(result, SCu8(snippet->name))){
-					write_snippet(app, view_id, buffer, cursor_pos, snippet);
-					buffer_replace_range(app, buffer, global_snippet_cursor_range, string_u8_empty);
-					global_snippet_cursor_set = false;
-					break;
-				}
+            if (token->kind == TokenBaseKind_Identifier &&
+                token->sub_kind == TokenCppKind_Identifier &&
+                valid){
+				
+                String_Const_u8 token_as_string = push_token_lexeme(app, scratch, buffer, token);
+				
+                for(Buffer_ID buf = get_buffer_next(app, 0, Access_Always);
+                    buf != 0;
+                    buf = get_buffer_next(app, buf, Access_Always))
+                {
+					Code_Index_File *file = code_index_get_file(buf);
+					if(file != 0){
+						for(i32 i = 0; i < file->note_array.count; i += 1){
+							Code_Index_Note *note = file->note_array.ptrs[i];
+							//b32 found =false;
+							switch(note->note_kind){
+								case CodeIndexNote_Type:{
+									if(string_match(note->text, token_as_string, StringMatch_Exact)){
+										Range_i64 range = { 0 };
+										range.start= token->pos;
+										range.end= token->pos+token->size;
+                                        //paint_text_color(app, text_layout_id, range, ARGBFromID(defcolor_keyword));
+                                        paint_text_color(app, text_layout_id, range, STRUCT_HIGHLIGHT_COLOR);
+										break;
+									}
+								}break;
+							}
+						}
+					}
+                }
+            }
+            if (!token_it_inc_all(&it)){
+                break;
 			}
 		}
-	}		
-}		
-
+	}
+}
 
 static void
 skytrias_render_buffer(Application_Links *app, View_ID view_id, Face_ID face_id,
@@ -819,7 +771,7 @@ skytrias_render_buffer(Application_Links *app, View_ID view_id, Face_ID face_id,
             Comment_Highlight_Pair pairs[] = {
                 {string_u8_litexpr("NOTE"), finalize_color(defcolor_comment_pop, 0)},
                 {string_u8_litexpr("TODO"), finalize_color(defcolor_comment_pop, 1)},
-                {string_u8_litexpr("HACK"), finalize_color(HACK_HIGHLIGHT_COLOR, 1)},
+                {string_u8_litexpr("HACK"), HACK_HIGHLIGHT_COLOR},
             };
             draw_comment_highlights(app, buffer, text_layout_id,
                                     &token_array, pairs, ArrayCount(pairs));
@@ -879,9 +831,10 @@ skytrias_render_buffer(Application_Links *app, View_ID view_id, Face_ID face_id,
     skytrias_paint_functions(app, buffer, text_layout_id);
     skytrias_paint_rust_macros(app, buffer, text_layout_id);
     //skytrias_paint_rust_indent(app, buffer, text_layout_id);
-    
+    skytrias_paint_tokens(app, buffer, text_layout_id);
+	
 	if (is_active_view) {
-		skytrias_automatic_snippet_inserting(app, view_id, buffer, face_id, text_layout_id);
+		skytrias_auto_snippet(app, view_id, buffer, face_id, text_layout_id);
 	}
 	
     // NOTE(allen): Line highlight
