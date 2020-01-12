@@ -4,6 +4,8 @@ static u32 SNIPPET_HIGHLIGHT_COLOR = 0x3325B2BC;
 global b32 global_snippet_word_highlight_on = 1; // NOTE(Skytrias): DISABLE this if you dont want words to be highlighted, this just helps a lot to see bugs appear, 
 global Range_i64 global_snippet_cursor_range = {};
 global b32 global_snippet_cursor_set = 0;
+// if the start of the word you write doesnt match the current one, stop auto snippet
+global i64 global_snippet_start_line = 0;
 
 function void
 st_write_text(Application_Links *app, String_Const_u8 insert){
@@ -11,6 +13,8 @@ st_write_text(Application_Links *app, String_Const_u8 insert){
     if (insert.str != 0 && insert.size > 0){
         View_ID view = get_active_view(app, Access_ReadWriteVisible);
         if_view_has_highlighted_range_delete_range(app, view);
+        
+        Buffer_ID buffer = view_get_buffer(app, view, Access_ReadWriteVisible);
         
         i64 pos = view_get_cursor_pos(app, view);
         pos = view_get_character_legal_pos_from_pos(app, view, pos);
@@ -32,6 +36,7 @@ st_write_text(Application_Links *app, String_Const_u8 insert){
 				if (!global_snippet_cursor_set) {
 					global_snippet_cursor_set = 1;
 					global_snippet_cursor_range.start = pos;
+					global_snippet_start_line = get_line_number_from_pos(app, buffer, pos);
 				} else {
 					// reset cursor range when any break happens
 					if (c == ',' ||
@@ -39,14 +44,9 @@ st_write_text(Application_Links *app, String_Const_u8 insert){
 						global_snippet_cursor_range.start = pos;
 					}
 				}
-				
-				// always set the end to be + 1 the written character
-				//global_snippet_cursor_range.end = pos + 1;
 			}
 		}
 		
-        Buffer_ID buffer = view_get_buffer(app, view, Access_ReadWriteVisible);
-        
         // NOTE(allen): consecutive inserts merge logic
         History_Record_Index first_index = buffer_history_get_current_state_index(app, buffer);
         b32 do_merge = false;
@@ -131,6 +131,7 @@ CUSTOM_DOC("Inserts text and auto-indents the line on which the cursor sits if a
     }
 }
 
+// loop to set the cursor end of the word you're typing, cancels the write at certian characters
 function void skytrias_auto_snippet(Application_Links *app, View_ID view_id, Buffer_ID buffer, Face_ID face_id, Text_Layout_ID text_layout_id) {
 	// dont allow snippet autocomplete when no existasdasda
 	if (global_snippet_count < 0) {
@@ -141,6 +142,15 @@ function void skytrias_auto_snippet(Application_Links *app, View_ID view_id, Buf
 	if (global_snippet_cursor_set) {
 		i64 cursor_pos = view_get_cursor_pos(app, view_id);
 		
+		// find out if there is a comment at the start of the line
+		i64 current_line_number = get_line_number_from_pos(app, buffer, cursor_pos);
+		
+		// additional check for line numbers, is helpful if you move after writing
+		if (current_line_number != global_snippet_start_line) {
+			global_snippet_cursor_set = false;
+			return;
+		}
+		
 		// NOTE(Skytrias): forced to do this or you could wrap all base_commands disable global_snippet_cursor_set each time it doesnt write
 		global_snippet_cursor_range.end = cursor_pos;
 		
@@ -148,9 +158,45 @@ function void skytrias_auto_snippet(Application_Links *app, View_ID view_id, Buf
 		i64 diff = global_snippet_cursor_range.end - global_snippet_cursor_range.start;
 		if (diff < 0 || diff > 10) {
 			global_snippet_cursor_set = false;
+			return;
 		}
 		
 		Scratch_Block scratch(app);
+		
+		// TODO(Skytrias): look through tokens, find comment in line, kinda bad, look string match instead?
+		{
+			Token_Array array = get_token_array_from_buffer(app, buffer);
+			if (array.tokens != 0){
+				i64 line_start = get_line_start_pos(app, buffer, current_line_number);
+				Token_Iterator_Array it = token_iterator_pos(buffer, &array, line_start);
+				
+				b32 comment_found = false;
+				
+				Token *token = token_it_read(&it);
+				if (token->sub_kind == TokenCppKind_LineComment) {
+					token = token_it_read(&it);
+					if (token->sub_kind == TokenCppKind_LineComment) {
+						comment_found = true;
+					}
+				} else {
+					token_it_inc_non_whitespace(&it);
+					token = token_it_read(&it);
+					
+					if (token->sub_kind == TokenCppKind_LineComment) {
+						token = token_it_read(&it);
+						
+						if (token->sub_kind == TokenCppKind_LineComment) {
+							comment_found = true;
+						}
+					}
+				}
+				
+				if (comment_found) {
+					global_snippet_cursor_set = false;
+					return;
+				}
+			}
+		}
 		
 		// visual help
 		if (global_snippet_word_highlight_on) {
@@ -174,7 +220,6 @@ function void skytrias_auto_snippet(Application_Links *app, View_ID view_id, Buf
 			u8 *memory = push_array(scratch, u8, length);
 			if (buffer_read_range(app, buffer, global_snippet_cursor_range, memory)){
 				result = SCu8(memory, length);
-				//draw_string(app, face_id, result, Vec2_f32 { 50.0f, 50.0f }, 0xFFFF0000);
 			} else{
 				end_temp(restore_point);
 			}

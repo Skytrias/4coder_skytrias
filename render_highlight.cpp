@@ -558,7 +558,8 @@ skytrias_paint_rust_macros(Application_Links *app, Buffer_ID buffer, Text_Layout
         Range_i64 visible_range = text_layout_get_visible_range(app, text_layout_id);
         i64 first_index = token_index_from_pos(&array, visible_range.first);
         Token_Iterator_Array it = token_iterator_index(0, &array, first_index);
-        for (;;){
+        
+		for (;;){
             Token *token = token_it_read(&it);
             if (token->pos >= visible_range.one_past_last){
                 break;
