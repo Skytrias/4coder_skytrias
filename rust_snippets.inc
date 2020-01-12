@@ -24,9 +24,10 @@
 {"implx",     "impl  for  {\npub fn () {\n\n}\n}\n", 5, 10},
 {"cratey", "use crate::::*;", 11, 14},
 {"cratex", "crate::::();", 7, 9},
+{"pry", "println!(\"{}\", );", 15, 9},
+{"prx", "println!(\"\");", 8, 9},
 
 // default ones that you rarely write or deviate from
-{"print", "println!();", 9, 0},
 {"match", "match  {\n => \n_ => {}\n}\n", 6, 9},
 {"struct",     "pub struct  {\n\n}\n", 11, 14},
 {"enum",     "pub enum  {\n\n}\n", 9, 12},

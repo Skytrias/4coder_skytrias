@@ -11,7 +11,7 @@ static Range_i64 global_code_peek_token_range;
 static void Fleury4OpenCodePeek(Application_Links *app, String_Const_u8 base_needle, String_Match_Flag must_have_flags, String_Match_Flag must_not_have_flags, Buffer_ID current_buffer);
 static void Fleury4CloseCodePeek(void);
 static void Fleury4NextCodePeek(void);
-static void skytrias_backwards_code_peek();
+static void st_backwards_code_peek();
 static void Fleury4CodePeekGo(Application_Links *app);
 
 static ARGB_Color
@@ -44,7 +44,7 @@ Fleury4MakeTypeSearchList(Application_Links *app, Arena *arena, String_Const_u8 
 }
 
 
-CUSTOM_COMMAND_SIG(skytrias_backwards_code_peek)
+CUSTOM_COMMAND_SIG(st_backwards_code_peek)
 CUSTOM_DOC("Goes back in code peek")
 {
 	View_ID view = get_active_view(app, Access_ReadWriteVisible);
@@ -53,7 +53,7 @@ CUSTOM_DOC("Goes back in code peek")
 	if(global_code_peek_open && pos >= global_code_peek_token_range.start &&
        pos <= global_code_peek_token_range.end)
     {
-		skytrias_backwards_code_peek();
+		st_backwards_code_peek();
 	}
 }
 
@@ -162,7 +162,7 @@ Fleury4NextCodePeek(void)
 }
 
 // NOTE(Skytrias): goes backwards in the code peek indexes list
-static void skytrias_backwards_code_peek(void) {
+static void st_backwards_code_peek(void) {
     if (--global_code_peek_selected_index < 0) {
         global_code_peek_selected_index = global_code_peek_match_count;
 	}
@@ -187,8 +187,8 @@ Fleury4CodePeekGo(Application_Links *app)
 }
 
 static void
-skytrias_render_code_peek(Application_Links *app, View_ID view_id, Face_ID face_id, Buffer_ID buffer,
-                          Frame_Info frame_info)
+st_render_code_peek(Application_Links *app, View_ID view_id, Face_ID face_id, Buffer_ID buffer,
+					Frame_Info frame_info)
 {
     if(global_code_peek_open &&
        global_code_peek_selected_index >= 0 &&
@@ -249,7 +249,7 @@ skytrias_render_code_peek(Application_Links *app, View_ID view_id, Face_ID face_
 				Token_Array token_array = get_token_array_from_buffer(app, match->buffer);
 				if(token_array.tokens != 0)
 				{
-                    skytrias_draw_cpp_token_colors(app, text_layout_id, &token_array);
+                    st_draw_cpp_token_colors(app, text_layout_id, &token_array);
 				}
 				else
 				{

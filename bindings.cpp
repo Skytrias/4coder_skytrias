@@ -1,6 +1,6 @@
 // NOTE(Skytrias): own preferences to keybindings
 static void
-skytrias_set_bindings(Mapping *mapping)
+st_set_bindings(Mapping *mapping)
 {
     MappingScope();
     SelectMapping(mapping);
@@ -91,7 +91,7 @@ skytrias_set_bindings(Mapping *mapping)
     Bind(delete_line,                 KeyCode_D, KeyCode_Control, KeyCode_Shift);
     Bind(center_view,                 KeyCode_E, KeyCode_Control);
     Bind(left_adjust_view,            KeyCode_E, KeyCode_Control, KeyCode_Shift);
-    Bind(search,                      KeyCode_F, KeyCode_Control);
+    Bind(st_search,                      KeyCode_F, KeyCode_Control);
     Bind(list_all_locations,          KeyCode_F, KeyCode_Control, KeyCode_Shift);
     Bind(list_all_substring_locations_case_insensitive, KeyCode_F, KeyCode_Alt);
     Bind(goto_line,                   KeyCode_G, KeyCode_Control);
@@ -104,10 +104,10 @@ skytrias_set_bindings(Mapping *mapping)
     Bind(query_replace,               KeyCode_Q, KeyCode_Control);
     Bind(query_replace_identifier,    KeyCode_Q, KeyCode_Control, KeyCode_Shift);
     Bind(query_replace_selection,     KeyCode_Q, KeyCode_Alt);
-    Bind(reverse_search,              KeyCode_R, KeyCode_Control);
+    Bind(st_reverse_search,              KeyCode_R, KeyCode_Control);
     Bind(save,                        KeyCode_S, KeyCode_Control);
     Bind(save_all_dirty_buffers,      KeyCode_S, KeyCode_Control, KeyCode_Shift);
-    Bind(search_identifier,           KeyCode_T, KeyCode_Control);
+    Bind(st_search_identifier,           KeyCode_T, KeyCode_Control);
     Bind(list_all_locations_of_identifier, KeyCode_T, KeyCode_Control, KeyCode_Shift);
     Bind(paste_and_indent,            KeyCode_V, KeyCode_Control);
     Bind(paste_next_and_indent,       KeyCode_V, KeyCode_Control, KeyCode_Shift);
@@ -122,7 +122,7 @@ skytrias_set_bindings(Mapping *mapping)
 	
     SelectMap(mapid_code);
     ParentMap(mapid_file);
-    
+	
 	// NOTE(Skytrias): used for auto snippet
 	BindTextInput(st_write_text_and_auto_indent);
     Bind(move_left_alpha_numeric_boundary,           KeyCode_Left, KeyCode_Control);
@@ -134,11 +134,12 @@ skytrias_set_bindings(Mapping *mapping)
     //Bind(word_complete_reverse,              KeyCode_Tab, KeyCode_Shift);
     //Bind(auto_indent_range,          KeyCode_Tab, KeyCode_Control);
     //Bind(auto_indent_line_at_cursor, KeyCode_Tab, KeyCode_Shift);
-    Bind(word_complete_drop_down,    KeyCode_Tab, KeyCode_Shift, KeyCode_Control);
+    //Bind(word_complete_drop_down,    KeyCode_Tab, KeyCode_Shift, KeyCode_Control);
 	// NOTE(Skytrias): use hack instead of write_block
     Bind(write_hack,                KeyCode_R, KeyCode_Alt);
     Bind(write_todo,                 KeyCode_T, KeyCode_Alt);
     Bind(write_note,                 KeyCode_Y, KeyCode_Alt);
+	Bind(list_all_locations,               KeyCode_Tab, KeyCode_Shift, KeyCode_Control);
     Bind(list_all_locations_of_type_definition,               KeyCode_D, KeyCode_Alt);
     Bind(list_all_locations_of_type_definition_of_identifier, KeyCode_T, KeyCode_Alt, KeyCode_Shift);
 	
@@ -158,6 +159,6 @@ skytrias_set_bindings(Mapping *mapping)
         Bind(fleury_code_peek,          KeyCode_Alt, KeyCode_Control);
         Bind(fleury_close_code_peek,    KeyCode_Escape);
         Bind(fleury_code_peek_go,       KeyCode_Return, KeyCode_Control);
-        Bind(skytrias_backwards_code_peek, KeyCode_Tab, KeyCode_Control);
+        Bind(st_backwards_code_peek, KeyCode_Tab, KeyCode_Control);
     }
 }

@@ -132,7 +132,7 @@ CUSTOM_DOC("Inserts text and auto-indents the line on which the cursor sits if a
 }
 
 // loop to set the cursor end of the word you're typing, cancels the write at certian characters
-function void skytrias_auto_snippet(Application_Links *app, View_ID view_id, Buffer_ID buffer, Face_ID face_id, Text_Layout_ID text_layout_id) {
+function void st_auto_snippet(Application_Links *app, View_ID view_id, Buffer_ID buffer, Face_ID face_id, Text_Layout_ID text_layout_id) {
 	// dont allow snippet autocomplete when no existasdasda
 	if (global_snippet_count < 0) {
 		global_snippet_cursor_set = false;
@@ -163,39 +163,8 @@ function void skytrias_auto_snippet(Application_Links *app, View_ID view_id, Buf
 		
 		Scratch_Block scratch(app);
 		
-		// TODO(Skytrias): look through tokens, find comment in line, kinda bad, look string match instead?
-		{
-			Token_Array array = get_token_array_from_buffer(app, buffer);
-			if (array.tokens != 0){
-				i64 line_start = get_line_start_pos(app, buffer, current_line_number);
-				Token_Iterator_Array it = token_iterator_pos(buffer, &array, line_start);
-				
-				b32 comment_found = false;
-				
-				Token *token = token_it_read(&it);
-				if (token->sub_kind == TokenCppKind_LineComment) {
-					token = token_it_read(&it);
-					if (token->sub_kind == TokenCppKind_LineComment) {
-						comment_found = true;
-					}
-				} else {
-					token_it_inc_non_whitespace(&it);
-					token = token_it_read(&it);
-					
-					if (token->sub_kind == TokenCppKind_LineComment) {
-						token = token_it_read(&it);
-						
-						if (token->sub_kind == TokenCppKind_LineComment) {
-							comment_found = true;
-						}
-					}
-				}
-				
-				if (comment_found) {
-					global_snippet_cursor_set = false;
-					return;
-				}
-			}
+		if (st_has_line_comment(app, buffer, current_line_number)) {
+			global_snippet_cursor_set = false;
 		}
 		
 		// visual help

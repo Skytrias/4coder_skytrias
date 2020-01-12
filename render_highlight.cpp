@@ -15,9 +15,9 @@ static u32 STRUCT_HIGHLIGHT_COLOR = 0xFF99db76;
 
 // NOTE(Skytrias): custom growth animation added to ryan squishy cursor
 static void
-skytrias_render_cursor(Application_Links *app, View_ID view_id, b32 is_active_view,
-                       Buffer_ID buffer, Text_Layout_ID text_layout_id,
-                       f32 roundness, f32 outline_thickness, Frame_Info frame_info)
+st_render_cursor(Application_Links *app, View_ID view_id, b32 is_active_view,
+				 Buffer_ID buffer, Text_Layout_ID text_layout_id,
+				 f32 roundness, f32 outline_thickness, Frame_Info frame_info)
 {
     b32 has_highlight_range = draw_highlight_range(app, view_id, buffer, text_layout_id, roundness);
     
@@ -403,7 +403,7 @@ Fleury4RenderRangeHighlight(Application_Links *app, View_ID view_id, Text_Layout
 
 // NOTE(Skytrias): custom token coloring
 function FColor
-skytrias_get_token_color_cpp(Token token){
+st_get_token_color_cpp(Token token){
     Managed_ID color = defcolor_text_default;
     switch (token.kind){
         case TokenBaseKind_Preprocessor:
@@ -472,7 +472,7 @@ skytrias_get_token_color_cpp(Token token){
 
 // NOTE(Skytrias): nothing customized, just here since token colors are customized
 function void
-skytrias_draw_cpp_token_colors(Application_Links *app, Text_Layout_ID text_layout_id, Token_Array *array){
+st_draw_cpp_token_colors(Application_Links *app, Text_Layout_ID text_layout_id, Token_Array *array){
     Range_i64 visible_range = text_layout_get_visible_range(app, text_layout_id);
     i64 first_index = token_index_from_pos(array, visible_range.first);
     Token_Iterator_Array it = token_iterator_index(0, array, first_index);
@@ -481,7 +481,7 @@ skytrias_draw_cpp_token_colors(Application_Links *app, Text_Layout_ID text_layou
         if (token->pos >= visible_range.one_past_last){
             break;
         }
-        FColor color = skytrias_get_token_color_cpp(*token);
+        FColor color = st_get_token_color_cpp(*token);
         ARGB_Color argb = fcolor_resolve(color);
         paint_text_color(app, text_layout_id, Ii64_size(token->pos, token->size), argb);
         if (!token_it_inc_all(&it)){
@@ -492,7 +492,7 @@ skytrias_draw_cpp_token_colors(Application_Links *app, Text_Layout_ID text_layou
 
 // NOTE(Skytrias): paints all standard text leading to a '(' or '[' 
 function void
-skytrias_paint_functions(Application_Links *app, Buffer_ID buffer, Text_Layout_ID text_layout_id) {
+st_paint_functions(Application_Links *app, Buffer_ID buffer, Text_Layout_ID text_layout_id) {
     i64 keyword_length = 0;
     i64 start_pos = 0;
     i64 end_pos = 0;
@@ -548,7 +548,7 @@ skytrias_paint_functions(Application_Links *app, Buffer_ID buffer, Text_Layout_I
 
 // NOTE(Skytrias): paints all text leading up to a '!' in some color you like, nice for rust macros  
 function void
-skytrias_paint_rust_macros(Application_Links *app, Buffer_ID buffer, Text_Layout_ID text_layout_id) {
+st_paint_rust_macros(Application_Links *app, Buffer_ID buffer, Text_Layout_ID text_layout_id) {
     i64 keyword_length = 0;
     i64 start_pos = 0;
     i64 end_pos = 0;
@@ -604,7 +604,7 @@ skytrias_paint_rust_macros(Application_Links *app, Buffer_ID buffer, Text_Layout
 
 // NOTE(Skytrias): not used! "can" show you dotted '.' places 
 function void
-skytrias_paint_rust_indent(Application_Links *app, Buffer_ID buffer, Text_Layout_ID text_layout_id) {
+st_paint_rust_indent(Application_Links *app, Buffer_ID buffer, Text_Layout_ID text_layout_id) {
     i64 start_pos = 0;
     i64 end_pos = 0;
 	i64 keyword_length = 0;
@@ -677,7 +677,7 @@ skytrias_paint_rust_indent(Application_Links *app, Buffer_ID buffer, Text_Layout
     }
 }
 
-static void skytrias_paint_tokens(Application_Links *app, Buffer_ID buffer, Text_Layout_ID text_layout_id)
+static void st_paint_tokens(Application_Links *app, Buffer_ID buffer, Text_Layout_ID text_layout_id)
 {
     Scratch_Block scratch(app);
     FColor col = {0};
@@ -707,7 +707,7 @@ static void skytrias_paint_tokens(Application_Links *app, Buffer_ID buffer, Text
                 }
             }
 			
-			//skytrias_get_token_color_cpp(token);
+			//st_get_token_color_cpp(token);
 			
 			/*
             if(global_hex_colors){
@@ -753,9 +753,9 @@ static void skytrias_paint_tokens(Application_Links *app, Buffer_ID buffer, Text
 }
 
 static void
-skytrias_render_buffer(Application_Links *app, View_ID view_id, Face_ID face_id,
-                       Buffer_ID buffer, Text_Layout_ID text_layout_id,
-                       Rect_f32 rect, Frame_Info frame_info){
+st_render_buffer(Application_Links *app, View_ID view_id, Face_ID face_id,
+				 Buffer_ID buffer, Text_Layout_ID text_layout_id,
+				 Rect_f32 rect, Frame_Info frame_info){
     ProfileScope(app, "[Skytrias] render buffer");
     
     View_ID active_view = get_active_view(app, Access_Always);
@@ -765,7 +765,7 @@ skytrias_render_buffer(Application_Links *app, View_ID view_id, Face_ID face_id,
     // NOTE(allen): Token colorizing
     Token_Array token_array = get_token_array_from_buffer(app, buffer);
     if (token_array.tokens != 0){
-        skytrias_draw_cpp_token_colors(app, text_layout_id, &token_array);
+        st_draw_cpp_token_colors(app, text_layout_id, &token_array);
         
         // NOTE(allen): Scan for TODOs and NOTEs
         if (global_config.use_comment_keyword){
@@ -829,13 +829,13 @@ skytrias_render_buffer(Application_Links *app, View_ID view_id, Face_ID face_id,
     }
 	
     // NOTE(Skytrias): word highlight before braces ()
-    skytrias_paint_functions(app, buffer, text_layout_id);
-    skytrias_paint_rust_macros(app, buffer, text_layout_id);
-    //skytrias_paint_rust_indent(app, buffer, text_layout_id);
-    skytrias_paint_tokens(app, buffer, text_layout_id);
+    st_paint_functions(app, buffer, text_layout_id);
+    st_paint_rust_macros(app, buffer, text_layout_id);
+    //st_paint_rust_indent(app, buffer, text_layout_id);
+    st_paint_tokens(app, buffer, text_layout_id);
 	
 	if (is_active_view) {
-		skytrias_auto_snippet(app, view_id, buffer, face_id, text_layout_id);
+		st_auto_snippet(app, view_id, buffer, face_id, text_layout_id);
 	}
 	
     // NOTE(allen): Line highlight
@@ -854,7 +854,7 @@ skytrias_render_buffer(Application_Links *app, View_ID view_id, Face_ID face_id,
     switch (fcoder_mode){
         case FCoderMode_Original:
         {
-            skytrias_render_cursor(app, view_id, is_active_view, buffer, text_layout_id, cursor_roundness, mark_thickness, frame_info);
+            st_render_cursor(app, view_id, is_active_view, buffer, text_layout_id, cursor_roundness, mark_thickness, frame_info);
         }break;
         case FCoderMode_NotepadLike:
         {
@@ -879,7 +879,7 @@ skytrias_render_buffer(Application_Links *app, View_ID view_id, Face_ID face_id,
     if(global_code_peek_open && is_active_view)
     {
         Fleury4RenderRangeHighlight(app, view_id, text_layout_id, global_code_peek_token_range);
-        skytrias_render_code_peek(app, active_view, face_id, buffer, frame_info);
+        st_render_code_peek(app, active_view, face_id, buffer, frame_info);
     }
     
     draw_set_clip(app, prev_clip);
@@ -887,7 +887,7 @@ skytrias_render_buffer(Application_Links *app, View_ID view_id, Face_ID face_id,
 
 // default file_bar draw call with macro recording highlighted in red
 static void
-skytrias_draw_file_bar(Application_Links *app, View_ID view_id, Buffer_ID buffer, Face_ID face_id, Rect_f32 bar, f32 delta){
+st_draw_file_bar(Application_Links *app, View_ID view_id, Buffer_ID buffer, Face_ID face_id, Rect_f32 bar, f32 delta){
     Scratch_Block scratch(app);
     
     // NOTE(Skytrias): when recording, highlight file bar
@@ -955,7 +955,7 @@ skytrias_draw_file_bar(Application_Links *app, View_ID view_id, Buffer_ID buffer
 
 // NOTE(Skytrias): pretty much just custom scroll speed and render_buffer
 function void
-skytrias_render_caller(Application_Links *app, Frame_Info frame_info, View_ID view_id){
+st_render_caller(Application_Links *app, Frame_Info frame_info, View_ID view_id){
     ProfileScope(app, "skytrias render caller");
     View_ID active_view = get_active_view(app, Access_Always);
     b32 is_active_view = (active_view == view_id);
@@ -973,7 +973,7 @@ skytrias_render_caller(Application_Links *app, Frame_Info frame_info, View_ID vi
     b64 showing_file_bar = false;
     if (view_get_setting(app, view_id, ViewSetting_ShowFileBar, &showing_file_bar) && showing_file_bar){
         Rect_f32_Pair pair = layout_file_bar_on_top(region, line_height);
-        skytrias_draw_file_bar(app, view_id, buffer, face_id, pair.min, frame_info.animation_dt);
+        st_draw_file_bar(app, view_id, buffer, face_id, pair.min, frame_info.animation_dt);
         region = pair.max;
     }
     
@@ -1030,7 +1030,7 @@ skytrias_render_caller(Application_Links *app, Frame_Info frame_info, View_ID vi
     }
     
     // NOTE(allen): draw the buffer
-    skytrias_render_buffer(app, view_id, face_id, buffer, text_layout_id, region, frame_info);
+    st_render_buffer(app, view_id, face_id, buffer, text_layout_id, region, frame_info);
     
     text_layout_free(app, text_layout_id);
     draw_set_clip(app, prev_clip);
