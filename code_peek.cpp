@@ -6,6 +6,7 @@ String_Match global_code_peek_matches[16] = {0};
 static int global_code_peek_selected_index = -1;
 static f32 global_code_peek_open_transition = 0.f;
 static Range_i64 global_code_peek_token_range;
+global f32 global_code_peek_slide = 0.0f;
 
 // ryan
 static void Fleury4OpenCodePeek(Application_Links *app, String_Const_u8 base_needle, String_Match_Flag must_have_flags, String_Match_Flag must_not_have_flags, Buffer_ID current_buffer);
@@ -103,7 +104,7 @@ Fleury4OpenCodePeek(Application_Links *app, String_Const_u8 base_needle,
                     String_Match_Flag must_have_flags, String_Match_Flag must_not_have_flags, Buffer_ID current_buffer_id)
 {
     global_code_peek_match_count = 0;
-    
+    global_code_peek_slide = 1.0f;
     global_code_peek_open_transition = 0.f;
     
     Scratch_Block scratch(app);
@@ -208,7 +209,16 @@ st_render_code_peek(Application_Links *app, View_ID view_id, Face_ID face_id, Bu
 		Rect_f32 inner_rect = rect_inner(whole_rect, 3.f); // cut of the outline from 4coder default
 		Rect_f32_Pair bottom_rect = rect_split_top_bottom_neg(inner_rect, global_code_peek_height);
 		// animaate y0 to come from the bottom to its position
-		bottom_rect.max.y0 += bottom_rect.max.y1 * (1.0f - global_code_peek_open_transition);
+		
+		// NOTE(Skytrias): starts at 1 and goes to 0
+		f32 speed = 2.5f;
+		if (global_code_peek_slide > 0.0f) {
+			global_code_peek_slide -= frame_info.animation_dt * speed;
+		} else {
+			global_code_peek_slide = 0.0f;
+		}
+		
+		bottom_rect.max.y0 += bottom_rect.max.y1 * Max(0.0f, global_code_peek_slide);
 		draw_rectangle(app, bottom_rect.max, 0.0f, fcolor_resolve(fcolor_id(defcolor_back)));
 		draw_rectangle_outline(app, bottom_rect.max, 0.0f, 3.0f, fcolor_resolve(fcolor_id(defcolor_pop2)));
 		Rect_f32 rect = bottom_rect.max;
