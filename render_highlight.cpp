@@ -2,16 +2,15 @@
 const f32 ANIMATION_CURSOR_GROW1 = 55.0f;
 const f32 ANIMATION_CURSOR_GROW2 = 45.0f;
 const f32 ANIMATION_GROW_FACTOR = 5.0f;
-static f32 ANIMATION_MACRO = 100.0f;
-static f32 global_cursor_counter = 0.0f;
-static u32 global_cursor_times = 0;
-static Vec2_f32 global_smooth_cursor_position = {0};
+global f32 global_cursor_limit = 0.0f;
+global u32 global_cursor_reached = 0;
+global f32 global_cursor_growth_speed = 0.0f;
 
 // additional nord colors
-static u32 FUNCTION_HIGHLIGHT_COLOR = 0xFF25B2BC;
-static u32 MACRO_HIGHLIGHT_COLOR = 0xFFB877DB;
-static u32 HACK_HIGHLIGHT_COLOR = 0xd08770FF;
-static u32 STRUCT_HIGHLIGHT_COLOR = 0xFF99db76;
+global u32 FUNCTION_HIGHLIGHT_COLOR = 0xFF25B2BC;
+global u32 MACRO_HIGHLIGHT_COLOR = 0xFFB877DB;
+global u32 HACK_HIGHLIGHT_COLOR = 0xd08770FF;
+global u32 STRUCT_HIGHLIGHT_COLOR = 0xFF99db76;
 
 // NOTE(Skytrias): custom growth animation added to ryan squishy cursor
 static void
@@ -20,41 +19,6 @@ st_render_cursor(Application_Links *app, View_ID view_id, b32 is_active_view,
 				 f32 roundness, f32 outline_thickness, Frame_Info frame_info)
 {
     b32 has_highlight_range = draw_highlight_range(app, view_id, buffer, text_layout_id, roundness);
-    
-	// TODO(Skytrias): optimize
-    switch (global_cursor_times) {
-        case 0: {
-            if (global_cursor_counter < ANIMATION_CURSOR_GROW1) {
-                global_cursor_counter += 1.0f;
-            } else {
-                global_cursor_times = 1;
-            }
-        } break;
-        
-        case 1: {
-            if (global_cursor_counter > 0.0f) {
-                global_cursor_counter -= 1.0f;
-            } else {
-                global_cursor_times = 2;
-            }
-        } break;
-        
-        case 2: {
-            if (global_cursor_counter < ANIMATION_CURSOR_GROW2) {
-                global_cursor_counter += 1.0f;
-            } else {
-                global_cursor_times = 3;
-            }
-        } break;
-        
-        case 3: {
-            if (global_cursor_counter > 0.0f) {
-                global_cursor_counter -= 1.0f;
-            } else {
-                global_cursor_times = 0;
-            }
-        } break;
-    }
     
     if (!has_highlight_range) {
         i64 cursor_pos = view_get_cursor_pos(app, view_id);
@@ -69,47 +33,58 @@ st_render_cursor(Application_Links *app, View_ID view_id, b32 is_active_view,
                 Rect_f32 last_rect = rect;
                 
                 // NOTE(Skytrias): counter
-                float growth = (global_cursor_counter / (ANIMATION_CURSOR_GROW1 + ANIMATION_CURSOR_GROW2)) * ANIMATION_GROW_FACTOR;
-                float x_change = target_rect.x0 - rect.x0 - growth / 2.0f;
-                float y_change = target_rect.y0 - rect.y0 - growth / 2.0f;
+				f32 size = 10.0f;
+				if (!global_cursor_reached) {
+					if (global_cursor_limit < 1.0f) {
+						global_cursor_growth_speed = 4.0f;
+						global_cursor_limit += frame_info.animation_dt * global_cursor_growth_speed;
+					} else {
+						global_cursor_reached = 1;
+					}
+				} else {
+					if (global_cursor_limit > 0) {
+						global_cursor_growth_speed = 2.5f;
+						global_cursor_limit -= frame_info.animation_dt * global_cursor_growth_speed;
+					} else {
+						global_cursor_reached = 0;
+					}
+				}
+				
+                float x_change = (target_rect.x0 - rect.x0);
+                float y_change = (target_rect.y0 - rect.y0);
                 float cursor_size_x = (target_rect.x1 - target_rect.x0);
-                float cursor_size_y = (target_rect.y1 - target_rect.y0) * (1 + fabsf(y_change) / 60.f);animate_in_n_milliseconds(app, 0);
+                float cursor_size_y = (target_rect.y1 - target_rect.y0) * (1 + fabsf(y_change) / 60.f);
+				
+				animate_in_n_milliseconds(app, 0);
                 
                 rect.x0 += x_change * frame_info.animation_dt * 14.f;
                 rect.y0 += y_change * frame_info.animation_dt * 14.f;
-                rect.x1 = (rect.x0 + cursor_size_x) + growth;
-                rect.y1 = (rect.y0 + cursor_size_y) + growth;
+                rect.x1 = (rect.x0 + cursor_size_x);
+                rect.y1 = (rect.y0 + cursor_size_y);
                 
-				// no growth on code_peek
-                global_smooth_cursor_position.x = rect.x0 + growth / 2.0f;
-                global_smooth_cursor_position.y = rect.y0 + growth / 2.0f;
-                
-                if(target_rect.y0 > last_rect.y0)
-                {
-                    if(rect.y0 < last_rect.y0)
-                    {
+				f32 growth = global_cursor_limit * size / 6.0f;
+				rect.x0 -= growth / 8.0f;
+				rect.x1 += growth * 1.5f;
+				
+                if(target_rect.y0 > last_rect.y0) {
+                    if(rect.y0 < last_rect.y0) {
                         rect.y0 = last_rect.y0;
                     }
                 }
-                else
-                {
-                    if(rect.y1 > last_rect.y1)
-                    {
+                else {
+                    if(rect.y1 > last_rect.y1) {
                         rect.y1 = last_rect.y1;
                     }
                 }
                 
                 FColor cursor_color = fcolor_id(defcolor_cursor);
                 
-                if(global_keyboard_macro_is_recording)
-                {
+                if(global_keyboard_macro_is_recording) {
                     cursor_color = fcolor_argb(0xffde40df);
                 }
                 
                 // NOTE(rjf): Draw main cursor.
-                {
-                    draw_rectangle(app, rect, roundness, fcolor_resolve(cursor_color));
-                }
+				draw_rectangle(app, rect, roundness, fcolor_resolve(cursor_color));
             }
             
             paint_text_color_pos(app, text_layout_id, cursor_pos,
@@ -904,12 +879,16 @@ st_render_buffer(Application_Links *app, View_ID view_id, Face_ID face_id,
     }
     
     // NOTE(rjf): Draw code peek
-    if(global_code_peek_open && is_active_view)
+    if(global_code_peek_open)
     {
-        Fleury4RenderRangeHighlight(app, view_id, text_layout_id, global_code_peek_token_range);
-        st_render_code_peek(app, active_view, face_id, buffer, frame_info);
-    }
-    
+		if (is_active_view) {
+			Fleury4RenderRangeHighlight(app, view_id, text_layout_id, global_code_peek_token_range);
+			st_render_code_peek(app, active_view, face_id, buffer, frame_info);
+		}
+	}
+	
+	//Fleury4RenderFunctionHelper(app, buffer, text_layout_id, cursor_pos);
+	
     draw_set_clip(app, prev_clip);
 }
 
