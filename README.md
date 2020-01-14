@@ -8,8 +8,11 @@ Feel free to take a look at the previews and pick out what ever you like into yo
 ## Snippet Autocompletion when writing
 ![snippet_autocompletion](https://github.com/Skytrias/4files/blob/master/previews/automatic_snippet_completion.gif)
 
-## Functions/Arrays color highlighting / (Rust) macro colord highlighting
-![function_highlight](https://github.com/Skytrias/4files/blob/master/previews/function_highlight.gif)
+## Functions / Arrays / struct / (Rust) macro colored highlighting
+![color_highlight](https://github.com/Skytrias/4files/blob/master/previews/color_highlight.png)
+
+## Search excludes comment lines
+![exclude_search](https://github.com/Skytrias/4files/blob/master/previews/exclude_comment_search.gif)
 
 ## Smooth cursor from ryan_fleury, added Heart beat animation
 ![smooth_cursor](https://github.com/Skytrias/4files/blob/master/previews/smooth_cursor.gif)
@@ -20,8 +23,8 @@ Feel free to take a look at the previews and pick out what ever you like into yo
   * Jump Backwards in history
 ![code_peek](https://github.com/Skytrias/4files/blob/master/previews/code_peek_rendering.gif)
 
-## Indenting of '(' reworked to not be ugly (for rust) anymore
-![paren_indenting](https://github.com/Skytrias/4files/blob/master/previews/better_paren_indenting.gif)
+## Indenting of '(' reworked to not be ugly (for rust) anymore (left new, right default)
+![paren_indenting](https://github.com/Skytrias/4files/blob/master/previews/custom_indent.png)
 
 ## ".iter()" function with '.' are indented now (for rust)
 ![dot_indenting](https://github.com/Skytrias/4files/blob/master/previews/dot_indenting.gif)
@@ -31,6 +34,9 @@ Feel free to take a look at the previews and pick out what ever you like into yo
 
 ## Macro recording highlighting
 ![macro_recording](https://github.com/Skytrias/4files/blob/master/previews/macro_recording_highlight.gif)
+
+## (Rust Lexer) Removed character highlighting to stop this
+![bad_rust_lexer](https://github.com/Skytrias/4files/blob/master/previews/bad_rust_character_lexer.gif)
 
 ## Minor Features:
 * Nord color theme *see above*
@@ -48,11 +54,5 @@ Feel free to take a look at the previews and pick out what ever you like into yo
 5. You will probably have to fix a few changed functions parameters because they may have been extended.
 6. `4ed.exe` has to be closed when trying to run any `.bat` file, otherwhise 4ed can't rebuild the `.dll` file 
 
-## .Bat files
-* build.bat: Rebuilds `4coder/custom_4ed.dll` in debug mode
-* release.bat: Rebuilds `4coder/custom_4ed.dll` in release mode for best performance
-* lex.bat: Rebuilds the lexer into the `4coder\custom\generated` folder, calls one_time.exe, and rebuilds everything
-    * The lexer speficies the words that will be highlighted in 4coder
-
-## I suggest
-Looking through each of the features, pick up what you think is cool or might be helpful to you. Extend the features you want, or send an issue / pull request.
+## Other
+I suggest looking through each of the features, pick up what you think is cool or might be helpful to you. Extend the features you want, or send an issue / pull request.
