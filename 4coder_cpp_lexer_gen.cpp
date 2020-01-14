@@ -351,7 +351,7 @@ build_language_model(void){
 	AddState(pre_R);
 	
 	// NOTE(Skytrias): rust character is kinda bad, you can simply write token highlighting for ' and be done with it
-	//AddState(character);
+	AddState(character);
 	AddState(string);
 	AddState(string_esc);
 	AddState(string_esc_oct2);
@@ -428,7 +428,7 @@ build_language_model(void){
 	sm_case("0", znumber);
 	
 	sm_case_flagged(is_include_body, false, "\"", string);
-	//sm_case("\'", character);
+	sm_case("\'", character);
 	sm_case_flagged(is_pp_body, false, "#", pp_directive_whitespace);
 	{
 		State *operator_state = smo_op_set_lexer_root(pp_ops, root, "LexError");
@@ -843,6 +843,28 @@ build_language_model(void){
 	
 	////
 	
+	// NOTE(Skytrias): function lexer search
+	
+	/*
+	sm_select_state(function_test);
+	sm_case("abcdefghijklmnopqrstuvwxyz"
+			"ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+			"_.:"
+			function_test);
+	{
+		Emit_Rule *emit = sm_emit_rule();
+		sm_emit_handler_direct("FunctionTest");
+		sm_case("(", emit);
+	}
+	{
+		Emit_Rule *emit = sm_emit_rule();
+		sm_emit_handler_direct("LexError");
+		sm_fallback_peek(emit);
+	}
+	*/
+	
+	//
+	
 	sm_select_state(include_pointy);
 	sm_case("abcdefghijklmnopqrstuvwxyz"
 			"ABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -920,11 +942,19 @@ build_language_model(void){
 	
 	////
 	
-	/*
+	// NOTE(Skytrias): custom
 	sm_select_state(character);
 	sm_set_flag(is_char, true);
-	sm_fallback_peek(string);
-	*/
+	
+	{
+		Emit_Rule *emit = sm_emit_rule();
+		sm_emit_handler_direct(is_wide, "LiteralCharacterWide");
+		sm_emit_handler_direct(is_utf8 , "LiteralCharacterUTF8");
+		sm_emit_handler_direct(is_utf16, "LiteralCharacterUTF16");
+		sm_emit_handler_direct(is_utf32, "LiteralCharacterUTF32");
+		sm_emit_handler_direct("LiteralCharacter");
+		sm_fallback_peek(emit);
+	}
 	
 	////
 	
@@ -938,18 +968,6 @@ build_language_model(void){
 		sm_emit_handler_direct("LiteralString");
 		sm_case_flagged(is_char, false, "\"", emit);
 	}
-	
-	/*
-	{
-		Emit_Rule *emit = sm_emit_rule();
-		sm_emit_handler_direct(is_wide, "LiteralCharacterWide");
-		sm_emit_handler_direct(is_utf8 , "LiteralCharacterUTF8");
-		sm_emit_handler_direct(is_utf16, "LiteralCharacterUTF16");
-		sm_emit_handler_direct(is_utf32, "LiteralCharacterUTF32");
-		sm_emit_handler_direct("LiteralCharacter");
-		sm_case_flagged(is_char, true, "\'", emit);
-	}
-	*/
 	
 	sm_case("\\", string_esc);
 	{

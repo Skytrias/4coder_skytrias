@@ -444,20 +444,10 @@ st_get_token_color_cpp(Token token){
 					color = defcolor_keyword;
 				}break;
 				
-				
 				case TokenCppKind_LiteralTrue:
                 case TokenCppKind_LiteralFalse:
                 {
                     color = defcolor_bool_constant;
-                }break;
-                
-				case TokenCppKind_LiteralCharacter:
-                case TokenCppKind_LiteralCharacterWide:
-                case TokenCppKind_LiteralCharacterUTF8:
-                case TokenCppKind_LiteralCharacterUTF16:
-                case TokenCppKind_LiteralCharacterUTF32:
-                {
-                    color = defcolor_char_constant;
                 }break;
                 
 				case TokenCppKind_PPIncludeFile:
@@ -677,6 +667,50 @@ st_paint_rust_indent(Application_Links *app, Buffer_ID buffer, Text_Layout_ID te
     }
 }
 
+// NOTE(Skytrias): paints all text leading up to a '\'' in some color you like, nice for rust macros  
+function void
+st_paint_rust_characters(Application_Links *app, Buffer_ID buffer, Text_Layout_ID text_layout_id) {
+	b32 character_found = 0;
+    
+	Token_Array array = get_token_array_from_buffer(app, buffer);
+    if (array.tokens != 0){
+        Range_i64 visible_range = text_layout_get_visible_range(app, text_layout_id);
+        i64 first_index = token_index_from_pos(&array, visible_range.first);
+        Token_Iterator_Array it = token_iterator_index(0, &array, first_index);
+        
+		for (;;){
+            Token *token = token_it_read(&it);
+            if (token->pos >= visible_range.one_past_last){
+                break;
+            }
+            
+			if (character_found) {
+				if (token->kind == TokenBaseKind_Identifier) {
+					Range_i64 range = { 0 };
+					range.start = token->pos - 1;
+					range.end = token->pos + 1;
+					paint_text_color(app, text_layout_id, range, fcolor_resolve(fcolor_id(defcolor_keyword)));
+					character_found = 0;
+				} else {
+					character_found = 0;
+				}
+			} else {
+				if (token->sub_kind == TokenCppKind_LiteralCharacter ||
+					token->sub_kind == TokenCppKind_LiteralCharacterWide ||
+					token->sub_kind == TokenCppKind_LiteralCharacterUTF8 ||
+					token->sub_kind == TokenCppKind_LiteralCharacterUTF16 ||
+					token->sub_kind == TokenCppKind_LiteralCharacterUTF32) {
+					character_found = 1;
+				}
+			}
+			
+            if (!token_it_inc_all(&it)){
+                break;
+            }
+        }
+    }
+}
+
 static void st_paint_tokens(Application_Links *app, Buffer_ID buffer, Text_Layout_ID text_layout_id)
 {
     Scratch_Block scratch(app);
@@ -706,13 +740,6 @@ static void st_paint_tokens(Application_Links *app, Buffer_ID buffer, Text_Layou
                     valid = false;
                 }
             }
-			
-			//st_get_token_color_cpp(token);
-			
-			/*
-            if(global_hex_colors){
-                stefan_paint_hex_tokens(app, buffer, text_layout_id, token);
-            }*/
 			
             if (token->kind == TokenBaseKind_Identifier &&
                 token->sub_kind == TokenCppKind_Identifier &&
@@ -831,7 +858,8 @@ st_render_buffer(Application_Links *app, View_ID view_id, Face_ID face_id,
     // NOTE(Skytrias): word highlight before braces ()
     st_paint_functions(app, buffer, text_layout_id);
     st_paint_rust_macros(app, buffer, text_layout_id);
-    //st_paint_rust_indent(app, buffer, text_layout_id);
+    st_paint_rust_characters(app, buffer, text_layout_id);
+	//st_paint_rust_indent(app, buffer, text_layout_id);
     st_paint_tokens(app, buffer, text_layout_id);
 	
 	if (is_active_view) {

@@ -1,7 +1,7 @@
-//{"///",    "////////////////////////////////", 32, 32},
+//{"/",    "////////////////////////////////", 32, 32},
 
 // control based
-{"ifel", "if  {\n\n} else {\n\n}", 2, 6},
+{"ifel", "if  {\n\n} else {\n\n}", 3, 6},
 {"iflet", "if let Some() =  {\n\n}", 12, 16},
 
 // for variants
@@ -25,10 +25,10 @@
 {"cratey", "use crate::::*;", 11, 14},
 {"cratex", "crate::::();", 7, 9},
 {"pry", "println!(\"{}\", );", 15, 9},
-{"prx", "println!(\"\");", 8, 9},
+{"prx", "println!(\"\");", 9, 10},
 
 // default ones that you rarely write or deviate from
-{"match", "match  {\n => \n_ => {}\n}\n", 6, 9},
+{"match", "match  {\n => ,\n_ => {}\n}\n", 6, 9},
 {"struct",     "pub struct  {\n\n}\n", 11, 14},
 {"enum",     "pub enum  {\n\n}\n", 9, 12},
 {"trait",     "pub trait  {\n\n}\n", 10, 13},
