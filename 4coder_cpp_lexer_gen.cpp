@@ -147,6 +147,11 @@ build_language_model(void){
 	sm_op("/=");
 	sm_op("%=");
 	
+	// NOTE(Skytrias): todo based tokens
+	sm_op("[x]", "TaskComplete");
+	sm_op("[_]", "TaskCanceled");
+	sm_op("[!]", "TaskImportant");
+	
 	sm_char_name('<', "Left");
 	sm_char_name('>', "Right");
 	sm_op("<<=");
@@ -247,6 +252,10 @@ build_language_model(void){
 	sm_key("Type");
 	// 2018
 	sm_key("Try");
+	
+	// NOTE(Skytrias): todo based tokens
+	sm_key("Note", "NOTE");
+	sm_key("Time", "Time");
 	
 	sm_select_base_kind(TokenBaseKind_LiteralInteger);
 	sm_key("LiteralTrue", "true");

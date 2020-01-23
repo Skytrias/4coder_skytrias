@@ -24,8 +24,8 @@
 {"implx",     "impl  for  {\npub fn () {\n\n}\n}\n", 5, 10},
 {"cratey", "use crate::::*;", 11, 14},
 {"cratex", "crate::::();", 7, 9},
-{"pry", "println!(\"{}\", );", 15, 9},
-{"prx", "println!(\"\");", 9, 10},
+{"pry", "println!(\"{}\", );", 15, 10},
+{"prx", "println!(\"\");", 10, 11},
 
 // default ones that you rarely write or deviate from
 {"match", "match  {\n => ,\n_ => {}\n}\n", 6, 9},

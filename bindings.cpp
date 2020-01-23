@@ -1,3 +1,16 @@
+CUSTOM_COMMAND_SIG(st_exit_4coder)
+CUSTOM_DOC("Attempts to close 4coder.")
+{
+    UnloadSound(global_timer_start_sound); 
+    UnloadSound(global_timer_end_sound); 
+    UnloadSound(global_timer_paste_sound); 
+    UnloadSound(global_timer_pause_sound); 
+    UnloadSound(global_timer_restart_sound); 
+	CloseAudioDevice();
+	
+	send_exit_signal(app);
+}
+
 // NOTE(Skytrias): own preferences to keybindings
 static void
 st_set_bindings(Mapping *mapping)
@@ -14,7 +27,8 @@ st_set_bindings(Mapping *mapping)
     Bind(change_active_panel,           KeyCode_Comma, KeyCode_Control);
     Bind(change_active_panel_backwards, KeyCode_Comma, KeyCode_Control, KeyCode_Shift);
     Bind(interactive_new,               KeyCode_N, KeyCode_Control);
-    Bind(interactive_open_or_new,       KeyCode_O, KeyCode_Control);
+    // NOTE(Skytrias): todo file_name lookup
+	Bind(st_interactive_open_or_new,       KeyCode_O, KeyCode_Control);
     Bind(open_in_other,                 KeyCode_O, KeyCode_Alt);
     Bind(interactive_kill_buffer,       KeyCode_K, KeyCode_Control);
     Bind(interactive_switch_buffer,     KeyCode_I, KeyCode_Control);
@@ -48,7 +62,7 @@ st_set_bindings(Mapping *mapping)
     Bind(project_fkey_command, KeyCode_F14);
     Bind(project_fkey_command, KeyCode_F15);
     Bind(project_fkey_command, KeyCode_F16);
-    Bind(exit_4coder,          KeyCode_F4, KeyCode_Alt);
+    Bind(st_exit_4coder,          KeyCode_F4, KeyCode_Alt);
     BindMouseWheel(mouse_wheel_scroll);
     BindMouseWheel(mouse_wheel_change_face_size, KeyCode_Control);
 	
@@ -69,7 +83,6 @@ st_set_bindings(Mapping *mapping)
     Bind(move_right,             KeyCode_Right);
     Bind(seek_end_of_line,       KeyCode_End);
     Bind(seek_beginning_of_line, KeyCode_Home);
-    // TODO(Skytrias): doesnt work?
 	Bind(page_up,                KeyCode_PageUp);
     Bind(page_down,              KeyCode_PageDown);
     Bind(goto_beginning_of_file, KeyCode_PageUp, KeyCode_Control);
@@ -143,16 +156,28 @@ st_set_bindings(Mapping *mapping)
     Bind(list_all_locations_of_type_definition,               KeyCode_D, KeyCode_Alt);
     Bind(list_all_locations_of_type_definition_of_identifier, KeyCode_T, KeyCode_Alt, KeyCode_Shift);
 	
-	Bind(select_surrounding_scope,   KeyCode_LeftBracket, KeyCode_Alt);
-    Bind(select_surrounding_scope_maximal, KeyCode_LeftBracket, KeyCode_Alt, KeyCode_Shift);
-    Bind(select_prev_scope_absolute, KeyCode_RightBracket, KeyCode_Alt);
-    Bind(select_prev_top_most_scope, KeyCode_RightBracket, KeyCode_Alt, KeyCode_Shift);
-    Bind(select_next_scope_absolute, KeyCode_Quote, KeyCode_Alt);
-    Bind(select_next_scope_after_current, KeyCode_Quote, KeyCode_Alt, KeyCode_Shift);
-    Bind(place_in_scope,             KeyCode_ForwardSlash, KeyCode_Alt);
+	// NOTE(Skytrias): german keyboard doesnt have these
+	//Bind(select_surrounding_scope,   KeyCode_LeftBracket, KeyCode_Alt);
+    //Bind(select_surrounding_scope_maximal, KeyCode_LeftBracket, KeyCode_Alt, KeyCode_Shift);
+    //Bind(select_prev_scope_absolute, KeyCode_RightBracket, KeyCode_Alt);
+    //Bind(select_prev_top_most_scope, KeyCode_RightBracket, KeyCode_Alt, KeyCode_Shift);
+    //Bind(select_next_scope_absolute, KeyCode_Quote, KeyCode_Alt);
+    //Bind(select_next_scope_after_current, KeyCode_Quote, KeyCode_Alt, KeyCode_Shift);
+    //Bind(place_in_scope,             KeyCode_ForwardSlash, KeyCode_Alt);
     Bind(delete_current_scope,       KeyCode_Minus, KeyCode_Alt);
-    Bind(open_file_in_quotes,        KeyCode_1, KeyCode_Alt);
-    Bind(open_matching_file_cpp,     KeyCode_2, KeyCode_Alt);
+    //Bind(open_file_in_quotes,        KeyCode_1, KeyCode_Alt);
+    //Bind(open_matching_file_cpp,     KeyCode_2, KeyCode_Alt);
+	
+	// NOTE(Skytrias): todo shortcuts
+	Bind(st_todo_insert_task_complete, KeyCode_1, KeyCode_Alt);
+	Bind(st_todo_insert_task_canceled, KeyCode_2, KeyCode_Alt);
+	Bind(st_todo_insert_task_important, KeyCode_3, KeyCode_Alt);
+	Bind(st_todo_remove_task, KeyCode_4, KeyCode_Alt);
+	// NOTE(Skytrias): timer shortcuts
+	Bind(st_todo_start_timer, KeyCode_1, KeyCode_Shift, KeyCode_Control);
+	Bind(st_todo_pause_timer, KeyCode_2, KeyCode_Shift, KeyCode_Control);
+	Bind(st_todo_paste_timer, KeyCode_3, KeyCode_Shift, KeyCode_Control);
+	Bind(st_todo_restart_timer, KeyCode_4, KeyCode_Shift, KeyCode_Control);
 	
     // NOTE(Skytrias): custom bindings
     {
@@ -168,21 +193,19 @@ BUFFER_HOOK_SIG(st_new_rust_file){
     Scratch_Block scratch(app);
 	
 	String_Const_u8 file_name = push_buffer_base_name(app, scratch, buffer_id);
-    if (!string_match(string_postfix(file_name, 3), string_u8_litexpr(".rs"))) {
-        return(0);
-    }
-	
-    Buffer_Insertion insert = begin_buffer_insertion_at_buffered(app, buffer_id, 0, scratch, KB(16));
-    insertf(&insert,
-            "use ultraviolet::vec::Vec2;\n"
-            "use crate::engine::App;\n"
-			"use crate::scripts::*;\n"
-			"use crate::helpers::*;\n"
-            "\n");
-    end_buffer_insertion(&insert);
-	
-	View_ID view = get_active_view(app, Access_ReadWriteVisible);
-	jump_to_location(app, view, buffer_id, 100);
+    if (string_match(string_postfix(file_name, 3), string_u8_litexpr(".rs"))) {
+		Buffer_Insertion insert = begin_buffer_insertion_at_buffered(app, buffer_id, 0, scratch, KB(16));
+		insertf(&insert,
+				"use ultraviolet::vec::Vec2;\n"
+				"use crate::engine::App;\n"
+				"use crate::scripts::*;\n"
+				"use crate::helpers::*;\n"
+				"\n");
+		end_buffer_insertion(&insert);
+		
+		View_ID view = get_active_view(app, Access_ReadWriteVisible);
+		jump_to_location(app, view, buffer_id, 100);
+	}
 	
 	return(0);
 }
@@ -269,14 +292,55 @@ BUFFER_HOOK_SIG(st_begin_buffer){
 	return(0);
 }
 
-// NOTE(Skytrias): not used in bindings?
-/*
-CUSTOM_COMMAND_SIG(st_reverse_search_identifier)
-CUSTOM_DOC("Begins an incremental search up through the current buffer for the word or token under the cursor.")
-{
-    isearch_identifier(app, Scan_Backward);
+function Rect_f32 st_buffer_region(Application_Links *app, View_ID view_id, Rect_f32 region){
+    Buffer_ID buffer = view_get_buffer(app, view_id, Access_Always);
+    Face_ID face_id = get_face_id(app, buffer);
+    Face_Metrics metrics = get_face_metrics(app, face_id);
+    f32 line_height = metrics.line_height;
+    f32 digit_advance = metrics.decimal_digit_advance;
+	
+    // NOTE(allen): margins
+    region = rect_inner(region, 3.f);
+	
+    // NOTE(allen): file bar
+    b64 showing_file_bar = false;
+    if (view_get_setting(app, view_id, ViewSetting_ShowFileBar, &showing_file_bar) &&
+        showing_file_bar){
+        Rect_f32_Pair pair = layout_file_bar_on_top(region, line_height);
+        region = pair.max;
+    }
+	
+    // NOTE(allen): query bars
+    {
+        Query_Bar *space[32];
+        Query_Bar_Ptr_Array query_bars = {};
+        query_bars.ptrs = space;
+        if (get_active_query_bars(app, view_id, ArrayCount(space), &query_bars)){
+            Rect_f32_Pair pair = layout_query_bar_on_top(region, line_height, query_bars.count);
+            region = pair.max;
+        }
+    }
+	
+    // NOTE(allen): FPS hud
+    if (show_fps_hud){
+        Rect_f32_Pair pair = layout_fps_hud_on_bottom(region, line_height);
+        region = pair.min;
+    }
+	
+    // NOTE(allen): line numbers
+    if (global_config.show_line_number_margins){
+        Rect_f32_Pair pair = layout_line_number_margin(app, buffer, region, digit_advance);
+        region = pair.max;
+    }
+	
+	// NOTE(Skytrias): testing todo
+	if (global_todo_margin_open) {
+		Rect_f32_Pair pair = st_layout_todo_number_margin(app, region, digit_advance);
+		region = pair.max;
+	}
+	
+    return(region);
 }
-*/
 
 internal void
 st_set_all_default_hooks(Application_Links *app){
@@ -304,7 +368,8 @@ st_set_all_default_hooks(Application_Links *app){
 	set_custom_hook(app, HookID_NewFile, st_new_rust_file);
 	set_custom_hook(app, HookID_SaveFile, default_file_save);
 	set_custom_hook(app, HookID_BufferEditRange, default_buffer_edit_range);
-	set_custom_hook(app, HookID_BufferRegion, default_buffer_region);
+	// NOTE(Skytrias): new
+	set_custom_hook(app, HookID_BufferRegion, st_buffer_region);
 	
 	set_custom_hook(app, HookID_Layout, layout_unwrapped);
 }

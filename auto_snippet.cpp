@@ -202,12 +202,12 @@ function void st_auto_snippet(Application_Links *app, View_ID view_id, Buffer_ID
 			Snippet *snippet = default_snippets;
 			for (i32 i = 0; i < global_snippet_count; i += 1, snippet += 1){
 				if (string_match(result, SCu8(snippet->name))){
-					write_snippet(app, view_id, buffer, cursor_pos, snippet);
 					buffer_replace_range(app, buffer, global_snippet_cursor_range, string_u8_empty);
+					write_snippet(app, view_id, buffer, global_snippet_cursor_range.start, snippet);
 					global_snippet_cursor_set = false;
 					break;
 				}
 			}
 		}
 	}		
-}		
+}

@@ -1,12 +1,9 @@
-// NOTE(Skytrias): Anything that highlights text or something else
-const f32 ANIMATION_CURSOR_GROW1 = 55.0f;
-const f32 ANIMATION_CURSOR_GROW2 = 45.0f;
-const f32 ANIMATION_GROW_FACTOR = 5.0f;
+// cursor animation variables
 global f32 global_cursor_limit = 0.0f;
 global u32 global_cursor_reached = 0;
 global f32 global_cursor_growth_speed = 0.0f;
 
-// additional nord colors
+// additional colors
 global u32 FUNCTION_HIGHLIGHT_COLOR = 0xFF25B2BC;
 global u32 MACRO_HIGHLIGHT_COLOR = 0xFFB877DB;
 global u32 HACK_HIGHLIGHT_COLOR = 0xd08770FF;
@@ -32,7 +29,7 @@ st_render_cursor(Application_Links *app, View_ID view_id, b32 is_active_view,
                 Rect_f32 target_rect = text_layout_character_on_screen(app, text_layout_id, cursor_pos);
                 Rect_f32 last_rect = rect;
                 
-                // NOTE(Skytrias): counter
+                // NOTE(Skytrias): counter with delta time
 				f32 size = 10.0f;
 				if (!global_cursor_reached) {
 					if (global_cursor_limit < 1.0f) {
@@ -248,7 +245,7 @@ Fleury4RenderCloseBraceAnnotation(Application_Links *app, Buffer_ID buffer, Text
         // NOTE(rjf): Draw.
         if(start_token)
 		{
-            draw_string(app, face_id, string_u8_litexpr("← "), close_scope_pos, finalize_color(defcolor_comment, 0));
+            draw_string(app, face_id, string_u8_litexpr("<-"), close_scope_pos, finalize_color(defcolor_comment, 0));
             close_scope_pos.x += 32;
             String_Const_u8 start_line = push_buffer_line(app, scratch, buffer,
                                                           get_line_number_from_pos(app, buffer, start_token->pos));
@@ -415,6 +412,12 @@ st_get_token_color_cpp(Token token){
 				case TokenCppKind_ColonColon:
                 case TokenCppKind_Colon:
                 case TokenCppKind_Arrow:
+                
+				// NOTE(Skytrias): todo based
+				case TokenCppKind_TaskComplete:
+                case TokenCppKind_TaskCanceled:
+                case TokenCppKind_TaskImportant:
+                case TokenCppKind_Time:
 				{
 					color = defcolor_keyword;
 				}break;
@@ -456,8 +459,7 @@ st_draw_cpp_token_colors(Application_Links *app, Text_Layout_ID text_layout_id, 
 }
 
 // NOTE(Skytrias): paints all standard text leading to a '(' or '[' 
-function void
-st_paint_functions(Application_Links *app, Buffer_ID buffer, Text_Layout_ID text_layout_id) {
+function void st_paint_functions(Application_Links *app, Buffer_ID buffer, Text_Layout_ID text_layout_id) {
     i64 keyword_length = 0;
     i64 start_pos = 0;
     i64 end_pos = 0;
@@ -552,12 +554,16 @@ st_paint_rust_macros(Application_Links *app, Buffer_ID buffer, Text_Layout_ID te
                 range.start = start_pos;
                 range.end = end_pos;
 				
+				print_message(app, current_project.dir);
+				print_message(app, current_project.name);
+				print_message(app, string_u8_litexpr("\n"));
+				
 				// NOTE(Skytrias): use your own colorscheme her via fcolor_id(defcolor_*)
 				// NOTE(Skytrias): or set the color you'd like to use globally like i do
-                paint_text_color(app, text_layout_id, range, MACRO_HIGHLIGHT_COLOR);
-                
-                end_pos = 0;
-                start_pos = 0;
+				paint_text_color(app, text_layout_id, range, MACRO_HIGHLIGHT_COLOR);
+				
+				end_pos = 0;
+				start_pos = 0;
             }
             
             if (!token_it_inc_all(&it)){
@@ -868,6 +874,17 @@ st_render_buffer(Application_Links *app, View_ID view_id, Face_ID face_id,
     // NOTE(allen): put the actual text on the actual screen
     draw_text_layout_default(app, text_layout_id);
     
+	if (global_todo_margin_open && view_id == global_todo_view && global_todo_view != -1) {
+		st_draw_todo_note(app, view_id, buffer, text_layout_id);
+		st_draw_todo_important_tasks(app, view_id, buffer, text_layout_id, face_id);
+		st_draw_todo_tasks(app, view_id, buffer, text_layout_id, face_id);
+	}
+	
+	// NOTE(Skytrias): timer stuff
+	if (global_timer_on) {
+		st_update_timer(app, frame_info, &global_timer);
+	}
+	
     // NOTE(rjf): Brace annotations
     {
         Fleury4RenderCloseBraceAnnotation(app, buffer, text_layout_id, cursor_pos);
@@ -887,19 +904,17 @@ st_render_buffer(Application_Links *app, View_ID view_id, Face_ID face_id,
 		}
 	}
 	
-	//Fleury4RenderFunctionHelper(app, buffer, text_layout_id, cursor_pos);
-	
     draw_set_clip(app, prev_clip);
 }
 
 // default file_bar draw call with macro recording highlighted in red
 static void
-st_draw_file_bar(Application_Links *app, View_ID view_id, Buffer_ID buffer, Face_ID face_id, Rect_f32 bar, f32 delta){
+st_draw_file_bar(Application_Links *app, View_ID view_id, Buffer_ID buffer, Face_ID face_id, Rect_f32 bar, f32 delta, b32 is_active_view){
     Scratch_Block scratch(app);
     
     // NOTE(Skytrias): when recording, highlight file bar
     if (global_keyboard_macro_is_recording) {
-        draw_rectangle_fcolor(app, bar, 0.f, fcolor_blend(fcolor_id(defcolor_bar), 0.5f, f_red, 0.5f));
+        draw_rectangle_fcolor(app, bar, 0.f, fcolor_blend(fcolor_id(defcolor_bar), 0.75f, f_red, 0.25f));
     } else {
         draw_rectangle_fcolor(app, bar, 0.f, fcolor_id(defcolor_bar));
     }
@@ -951,13 +966,38 @@ st_draw_file_bar(Application_Links *app, View_ID view_id, Buffer_ID buffer, Face
         push_fancy_string(scratch, &list, pop2_color, str.string);
     }
     
-    // NOTE(Skytrias): push the string REC to the file bar
-    if (global_keyboard_macro_is_recording) {
-        push_fancy_string(scratch, &list, base_color, string_u8_litexpr(" REC"));
-    }
-    
-    Vec2_f32 p = bar.p0 + V2f32(2.f, 2.f);
-    draw_fancy_line(app, face_id, fcolor_zero(), &list, p);
+	// only draw timer on the active view
+	if (is_active_view && (!st_timer_zero(&global_timer) || global_timer_on)) {
+		if (global_timer_is_pomodoro) {
+			FColor pomodoro_color = base_color;
+			
+			if (global_pomodori_on_break) {
+				if (global_pomodori_counter == 4) {
+					if (global_timer.minutes > global_pomodori_long_break_minutes - 1) {
+						pomodoro_color = f_green;
+					}
+				} else {
+					if (global_timer.minutes > global_pomodori_short_break_minutes - 1) {
+						pomodoro_color = f_green;
+					}
+				}
+			} else {
+				if (global_timer.minutes > global_pomodori_stop_minutes - 1) {
+					pomodoro_color = f_red;
+				}
+			}
+			
+			String_Const_u8 result = push_u8_stringf(scratch, "\t%02d:%02d:%02d", global_timer.hours, global_timer.minutes, global_timer.seconds);
+			push_fancy_string(scratch, &list, pomodoro_color, result);
+		} else {
+			// default timer drawing
+			String_Const_u8 result = push_u8_stringf(scratch, "\t%02d:%02d:%02d", global_timer.hours, global_timer.minutes, global_timer.seconds);
+			push_fancy_string(scratch, &list, base_color, result);
+		}
+	}
+	
+	Vec2_f32 p = bar.p0 + V2f32(2.f, 2.f);
+	draw_fancy_line(app, face_id, fcolor_zero(), &list, p);
 }
 
 // NOTE(Skytrias): pretty much just custom scroll speed and render_buffer
@@ -980,7 +1020,7 @@ st_render_caller(Application_Links *app, Frame_Info frame_info, View_ID view_id)
     b64 showing_file_bar = false;
     if (view_get_setting(app, view_id, ViewSetting_ShowFileBar, &showing_file_bar) && showing_file_bar){
         Rect_f32_Pair pair = layout_file_bar_on_top(region, line_height);
-        st_draw_file_bar(app, view_id, buffer, face_id, pair.min, frame_info.animation_dt);
+        st_draw_file_bar(app, view_id, buffer, face_id, pair.min, frame_info.animation_dt, is_active_view);
         region = pair.max;
     }
     
@@ -1027,15 +1067,28 @@ st_render_caller(Application_Links *app, Frame_Info frame_info, View_ID view_id)
         region = pair.max;
     }
     
+	// NOTE(Skytrias): layout for todo margin
+	Rect_f32 todo_number_rect = {};
+	if (global_todo_margin_open && view_id == global_todo_view && global_todo_view != -1) {
+		Rect_f32_Pair pair = st_layout_todo_number_margin(app, region, digit_advance);
+		todo_number_rect = pair.min;
+		region = pair.max;
+	}
+	
     // NOTE(allen): begin buffer render
     Buffer_Point buffer_point = scroll.position;
     Text_Layout_ID text_layout_id = text_layout_create(app, buffer, region, buffer_point);
     
     // NOTE(allen): draw line numbers
     if (global_config.show_line_number_margins){
-        draw_line_number_margin(app, view_id, buffer, face_id, text_layout_id, line_number_rect);
+        //draw_line_number_margin(app, view_id, buffer, face_id, text_layout_id, line_number_rect);
     }
     
+	// NOTE(Skytrias): layout for todo margin generatedd
+	if (global_todo_margin_open && view_id == global_todo_view && global_todo_view != -1) {
+		st_draw_todo_numbers_margin(app, view_id, buffer, text_layout_id, face_id, todo_number_rect);
+	}
+	
     // NOTE(allen): draw the buffer
     st_render_buffer(app, view_id, face_id, buffer, text_layout_id, region, frame_info);
     

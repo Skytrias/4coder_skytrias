@@ -95,7 +95,23 @@ CUSTOM_DOC("Closes code peek.")
 CUSTOM_COMMAND_SIG(fleury_code_peek_go)
 CUSTOM_DOC("Goes to the active code peek.")
 {
-    Fleury4CodePeekGo(app);
+	if(!global_code_peek_open) {
+		return;
+	}
+	
+	if(global_code_peek_selected_index >= 0 && global_code_peek_selected_index < global_code_peek_match_count &&
+       global_code_peek_match_count > 0)
+    {
+        View_ID view = get_active_view(app, Access_Always);
+        String_Match *match = &global_code_peek_matches[global_code_peek_selected_index];
+        view = get_next_view_looped_primary_panels(app, view, Access_Always);
+        view_set_buffer(app, view, match->buffer, 0);
+        i64 line_number = get_line_number_from_pos(app, match->buffer, match->range.start);
+        Buffer_Scroll scroll = view_get_buffer_scroll(app, view);
+        scroll.position.line_number = scroll.target.line_number = line_number;
+        view_set_buffer_scroll(app, view, scroll, SetBufferScroll_SnapCursorIntoView);
+        Fleury4CloseCodePeek();
+    }
 }
 
 
@@ -167,24 +183,6 @@ static void st_backwards_code_peek(void) {
     if (--global_code_peek_selected_index < 0) {
         global_code_peek_selected_index = global_code_peek_match_count;
 	}
-}
-
-static void
-Fleury4CodePeekGo(Application_Links *app)
-{
-    if(global_code_peek_selected_index >= 0 && global_code_peek_selected_index < global_code_peek_match_count &&
-       global_code_peek_match_count > 0)
-    {
-        View_ID view = get_active_view(app, Access_Always);
-        String_Match *match = &global_code_peek_matches[global_code_peek_selected_index];
-        view = get_next_view_looped_primary_panels(app, view, Access_Always);
-        view_set_buffer(app, view, match->buffer, 0);
-        i64 line_number = get_line_number_from_pos(app, match->buffer, match->range.start);
-        Buffer_Scroll scroll = view_get_buffer_scroll(app, view);
-        scroll.position.line_number = scroll.target.line_number = line_number;
-        view_set_buffer_scroll(app, view, scroll, SetBufferScroll_SnapCursorIntoView);
-        Fleury4CloseCodePeek();
-    }
 }
 
 static void
