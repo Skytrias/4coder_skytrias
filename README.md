@@ -5,11 +5,14 @@ Here are my customizations to [4coder](http://4coder.net/). These also include c
 Feel free to take a look at the previews and pick out what ever you like into your own customization layer.
 
 # Features (in order of significance):
-## Todo File with progress bars and markers 
-![todo_file_markers](https://github.com/Skytrias/4files/blob/master/previews/todo_file_markers.gif)
+## Todo File with progress bars and markers
+![todo_file_markers](https://github.com/Skytrias/4files/blob/master/previews/todo_progress_markers.gif)
 
-## Timer / Pomomodoro Timer which you can paste into a line end (nice for todo file)
+## Timer / Pomomodoro Timer with breaks
 ![timer](https://github.com/Skytrias/4files/blob/master/previews/pomodoro_timer.gif)
+
+## Timer paste into line end
+![timer_paste](https://github.com/Skytrias/4files/blob/master/previews/timer_paste.gif)
 
 ## Snippet Autocompletion when writing
 ![snippet_autocompletion](https://github.com/Skytrias/4files/blob/master/previews/automatic_snippet_completion.gif)
