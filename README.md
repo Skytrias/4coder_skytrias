@@ -4,6 +4,10 @@
 Here are my customizations to [4coder](http://4coder.net/). These also include customizations from other ppl.
 Feel free to take a look at the previews and pick out what ever you like into your own customization layer.
 
+# Dependencies:
+raudio for audio file playing (files must live next to the 4ed.exe you started) from raysan5 https://github.com/raysan5/raudio
+put the `src/` folder into a new `custom/external` folder
+
 # Features (in order of significance):
 ## Todo File with progress bars and markers
 ![todo_file_markers](https://github.com/Skytrias/4files/blob/master/previews/todo_progress_markers.gif)
