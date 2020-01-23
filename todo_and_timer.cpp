@@ -28,7 +28,7 @@ struct Timer {
 global Timer global_timer = {};
 global b32 global_timer_on = 0;
 // the higher the longer the timer takes to increase, 2 works on 120 hz, 1 on 60 probably 
-global f32 global_timer_speed = 0.25f;
+global f32 global_timer_speed = 2.0f;
 global b32 global_timer_is_pomodoro = 1;
 global i32 global_pomodori_counter = 0;
 global b32 global_pomodori_on_break = 1;
@@ -769,7 +769,7 @@ function void st_update_timer(Application_Links *app, Frame_Info frame_info, Tim
 	if (timer->seconds < 60) {
 		// TODO(Skytrias): adjust this to refresh rate?
 		if (timer->ticks > 1.0f * global_timer_speed) {
-			timer->seconds += 30;
+			timer->seconds += 1;
 			timer->ticks = 0.0f;
 		}
 	} else {
