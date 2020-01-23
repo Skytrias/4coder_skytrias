@@ -554,10 +554,6 @@ st_paint_rust_macros(Application_Links *app, Buffer_ID buffer, Text_Layout_ID te
                 range.start = start_pos;
                 range.end = end_pos;
 				
-				print_message(app, current_project.dir);
-				print_message(app, current_project.name);
-				print_message(app, string_u8_litexpr("\n"));
-				
 				// NOTE(Skytrias): use your own colorscheme her via fcolor_id(defcolor_*)
 				// NOTE(Skytrias): or set the color you'd like to use globally like i do
 				paint_text_color(app, text_layout_id, range, MACRO_HIGHLIGHT_COLOR);
