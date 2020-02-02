@@ -6,6 +6,8 @@ global Range_i64 global_snippet_cursor_range = {};
 global b32 global_snippet_cursor_set = 0;
 // if the start of the word you write doesnt match the current one, stop auto snippet
 global i64 global_snippet_start_line = 0;
+// check to see if the pos has changed, if not dont do string comparison
+global i64 global_snippet_last_end_pos = 0;
 
 function void
 st_write_text(Application_Links *app, String_Const_u8 insert){
@@ -18,7 +20,7 @@ st_write_text(Application_Links *app, String_Const_u8 insert){
         
         i64 pos = view_get_cursor_pos(app, view);
         pos = view_get_character_legal_pos_from_pos(app, view, pos);
-        
+		
 		// NOTE(Skytrias): save position of character written for snippet automation 
 		{
 			char c = insert.str[0];
@@ -26,8 +28,18 @@ st_write_text(Application_Links *app, String_Const_u8 insert){
 			// these characters will break up the range setting
 			if (c == ' ' ||
 				c == '_' ||
+				c == '+' ||
+				c == '-' ||
+				c == '/' ||
+				c == '*' ||
+				c == '=' ||
 				c == ':' ||
 				c == ';' ||
+				c == '.' ||
+				c == ',' ||
+				c == '(' ||
+					   c == ')' ||
+				c == '|' ||
 				c == '\t' ||
 				c == '\n') {
 				global_snippet_cursor_set = 0;
@@ -37,13 +49,7 @@ st_write_text(Application_Links *app, String_Const_u8 insert){
 					global_snippet_cursor_set = 1;
 					global_snippet_cursor_range.start = pos;
 					global_snippet_start_line = get_line_number_from_pos(app, buffer, pos);
-				} else {
-					// reset cursor range when any break happens
-					if (c == ',' ||
-						c == '.') {
-						global_snippet_cursor_range.start = pos;
-					}
-				}
+				} 
 			}
 		}
 		
@@ -69,11 +75,11 @@ st_write_text(Application_Links *app, String_Const_u8 insert){
                 }
             }
         }
-        
+		
         // NOTE(allen): perform the edit
         b32 edit_success = buffer_replace_range(app, buffer, Ii64(pos), insert);
         
-        // NOTE(allen): finish merging records if necessary
+		// NOTE(allen): finish merging records if necessary
         if (do_merge){
             History_Record_Index last_index = buffer_history_get_current_state_index(app, buffer);
             buffer_history_merge_record_range(app, buffer, first_index, last_index, RecordMergeFlag_StateInRange_MoveStateForward);
@@ -140,32 +146,12 @@ function void st_auto_snippet(Application_Links *app, View_ID view_id, Buffer_ID
 	}
 	
 	if (global_snippet_cursor_set) {
+		global_snippet_last_end_pos = global_snippet_cursor_range.end;
+		
 		i64 cursor_pos = view_get_cursor_pos(app, view_id);
-		
-		// find out if there is a comment at the start of the line
-		i64 current_line_number = get_line_number_from_pos(app, buffer, cursor_pos);
-		
-		// additional check for line numbers, is helpful if you move after writing
-		if (current_line_number != global_snippet_start_line) {
-			global_snippet_cursor_set = false;
-			return;
-		}
 		
 		// NOTE(Skytrias): forced to do this or you could wrap all base_commands disable global_snippet_cursor_set each time it doesnt write
 		global_snippet_cursor_range.end = cursor_pos;
-		
-		// stop if snippet set when word is bigger than 10 characters or goes minus!
-		i64 diff = global_snippet_cursor_range.end - global_snippet_cursor_range.start;
-		if (diff < 0 || diff > 10) {
-			global_snippet_cursor_set = false;
-			return;
-		}
-		
-		Scratch_Block scratch(app);
-		
-		if (st_has_line_comment(app, buffer, current_line_number)) {
-			global_snippet_cursor_set = false;
-		}
 		
 		// visual help
 		if (global_snippet_word_highlight_on) {
@@ -178,6 +164,34 @@ function void st_auto_snippet(Application_Links *app, View_ID view_id, Buffer_ID
 			f32 h = character_rect.y1;
 			Rect_f32 rect = { x, y, w, h };
 			draw_rectangle(app, rect, 4.0f, SNIPPET_HIGHLIGHT_COLOR);
+		}
+		
+		// skip same pos
+		if (cursor_pos == global_snippet_last_end_pos) {
+			return;
+		}
+		
+		// find out if there is a comment at the start of the line
+		i64 current_line_number = get_line_number_from_pos(app, buffer, cursor_pos);
+		
+		// additional check for line numbers, is helpful if you move after writing
+		if (current_line_number != global_snippet_start_line) {
+			global_snippet_cursor_set = false;
+			return;
+		}
+		
+		// stop if snippet set when word is bigger than 10 characters or goes minus!
+		i64 diff = global_snippet_cursor_range.end - global_snippet_cursor_range.start;
+		if (diff < 0 || diff > 10) {
+			global_snippet_cursor_set = false;
+			return;
+		}
+		
+		Scratch_Block scratch(app);
+		
+		// turn of auto snippet in line comment
+		if (st_has_line_comment(app, buffer, current_line_number)) {
+			global_snippet_cursor_set = false;
 		}
 		
 		String_Const_u8 result = string_u8_empty;

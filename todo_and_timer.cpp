@@ -196,7 +196,7 @@ function void st_draw_todo_numbers_margin(Application_Links *app, View_ID view_i
 		// line info
 		i64 line_start = get_line_start_pos(app, buffer, i);
 		i64 line_end = get_line_end_pos(app, buffer, i);
-		Indent_Info indent_info = get_indent_info_line_start(app, buffer, line_start, 1);
+		Indent_Info indent_info = get_indent_info_line_number_and_start(app, buffer, i, line_start, 1);
 		i64 tab = indent_info.indent_pos;
 		
 		// all tokens
@@ -306,7 +306,7 @@ function void st_draw_todo_tasks(Application_Links *app, View_ID view_id, Buffer
 		// line info
 		i64 line_start = get_line_start_pos(app, buffer, i);
 		i64 line_end = get_line_end_pos(app, buffer, i);
-		Indent_Info indent_info = get_indent_info_line_start(app, buffer, line_start, 1);
+		Indent_Info indent_info = get_indent_info_line_number_and_start(app, buffer, i, line_start, 1);
 		i64 tab = indent_info.indent_pos;
 		
 		// all tokens
@@ -326,7 +326,7 @@ function void st_draw_todo_tasks(Application_Links *app, View_ID view_id, Buffer
 				// line info
 				i64 other_line_start = get_line_start_pos(app, buffer, j);
 				i64 other_line_end = get_line_end_pos(app, buffer, j);
-				Indent_Info other_indent_info = get_indent_info_line_start(app, buffer, other_line_start, 1);
+				Indent_Info other_indent_info = get_indent_info_line_number_and_start(app, buffer, j, other_line_start, 1);
 				i64 other_tab = other_indent_info.indent_pos;
 				
 				// skip blanks
@@ -565,7 +565,6 @@ CUSTOM_DOC("Interactively open a file out of the file system and turns on todo h
     }
 }
 
-
 // timer specific commands
 
 // returns true if a "TIME" token exists in the line
@@ -609,13 +608,11 @@ CUSTOM_DOC("Starts the timer") {
 
 CUSTOM_COMMAND_SIG(st_todo_restart_timer)
 CUSTOM_DOC("Starts the timer") {
-	if (global_timer_on) {
-		PlaySound(global_timer_restart_sound);
-		global_timer_on = 0;
-		global_timer.hours = 0;
-		global_timer.minutes = 0;
-		global_timer.seconds = 0;
-	}
+	PlaySound(global_timer_restart_sound);
+	global_timer_on = 0;
+	global_timer.hours = 0;
+	global_timer.minutes = 0;
+	global_timer.seconds = 0;
 }
 
 CUSTOM_COMMAND_SIG(st_todo_pause_timer)
@@ -813,7 +810,7 @@ function void st_draw_todo_important_tasks(Application_Links *app, View_ID view_
 		// line info
 		i64 line_start = get_line_start_pos(app, buffer, i);
 		i64 line_end = get_line_end_pos(app, buffer, i);
-		Indent_Info indent_info = get_indent_info_line_start(app, buffer, line_start, 1);
+		Indent_Info indent_info = get_indent_info_line_number_and_start(app, buffer, i, line_start, 1);
 		i64 tab = indent_info.indent_pos;
 		
 		
@@ -849,7 +846,7 @@ function void st_draw_todo_important_tasks(Application_Links *app, View_ID view_
 				
 				// line info
 				i64 other_line_start = get_line_start_pos(app, buffer, j);
-				Indent_Info other_indent_info = get_indent_info_line_start(app, buffer, other_line_start, 1);
+				Indent_Info other_indent_info = get_indent_info_line_number_and_start(app, buffer, j, other_line_start, 1);
 				i64 other_tab = other_indent_info.indent_pos;
 				
 				if (tab == other_tab) {

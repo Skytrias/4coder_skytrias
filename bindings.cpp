@@ -13,12 +13,12 @@ CUSTOM_DOC("Attempts to close 4coder.")
 
 // NOTE(Skytrias): own preferences to keybindings
 static void
-st_set_bindings(Mapping *mapping)
+st_set_bindings(Mapping *mapping, i64 global_id, i64 file_id, i64 code_id)
 {
     MappingScope();
     SelectMapping(mapping);
 	
-    SelectMap(mapid_global);
+    SelectMap(global_id);
     BindCore(default_startup, CoreCode_Startup);
     BindCore(default_try_exit, CoreCode_TryExit);
     Bind(keyboard_macro_start_recording , KeyCode_U, KeyCode_Control);
@@ -31,14 +31,17 @@ st_set_bindings(Mapping *mapping)
 	Bind(st_interactive_open_or_new,       KeyCode_O, KeyCode_Control);
     Bind(open_in_other,                 KeyCode_O, KeyCode_Alt);
     Bind(interactive_kill_buffer,       KeyCode_K, KeyCode_Control);
-    Bind(interactive_switch_buffer,     KeyCode_I, KeyCode_Control);
+    // NOTE(Skytrias): new
+	Bind(interactive_switch_buffer,     KeyCode_I, KeyCode_Control);
     Bind(project_go_to_root_directory,  KeyCode_H, KeyCode_Control);
     Bind(save_all_dirty_buffers,        KeyCode_S, KeyCode_Control, KeyCode_Shift);
     Bind(change_to_build_panel,         KeyCode_Period, KeyCode_Alt);
     Bind(close_build_panel,             KeyCode_Comma, KeyCode_Alt);
     Bind(goto_next_jump,                KeyCode_N, KeyCode_Alt);
     Bind(goto_prev_jump,                KeyCode_N, KeyCode_Alt, KeyCode_Shift);
-    Bind(build_in_build_panel,          KeyCode_M, KeyCode_Alt);
+    // NOTE(Skytrias): i never use this
+	//Bind(build_in_build_panel,          KeyCode_M, KeyCode_Alt);
+	Bind(cursor_mark_swap,            KeyCode_M, KeyCode_Alt);
     Bind(goto_first_jump,               KeyCode_M, KeyCode_Alt, KeyCode_Shift);
     Bind(toggle_filebar,                KeyCode_B, KeyCode_Alt);
     Bind(execute_any_cli,               KeyCode_Z, KeyCode_Alt);
@@ -66,8 +69,8 @@ st_set_bindings(Mapping *mapping)
     BindMouseWheel(mouse_wheel_scroll);
     BindMouseWheel(mouse_wheel_change_face_size, KeyCode_Control);
 	
-    SelectMap(mapid_file);
-    ParentMap(mapid_global);
+    SelectMap(file_id);
+    ParentMap(global_id);
 	
     // NOTE(Skytrias): used for auto snippet
 	BindTextInput(st_write_text_input);
@@ -133,8 +136,8 @@ st_set_bindings(Mapping *mapping)
     Bind(if_read_only_goto_position_same_panel, KeyCode_Return, KeyCode_Shift);
     Bind(view_jump_list_with_lister,  KeyCode_Period, KeyCode_Control, KeyCode_Shift);
 	
-    SelectMap(mapid_code);
-    ParentMap(mapid_file);
+    SelectMap(code_id);
+    ParentMap(file_id);
 	
 	// NOTE(Skytrias): used for auto snippet
 	BindTextInput(st_write_text_and_auto_indent);
@@ -196,7 +199,6 @@ BUFFER_HOOK_SIG(st_new_rust_file){
     if (string_match(string_postfix(file_name, 3), string_u8_litexpr(".rs"))) {
 		Buffer_Insertion insert = begin_buffer_insertion_at_buffered(app, buffer_id, 0, scratch, KB(16));
 		insertf(&insert,
-				"use ultraviolet::vec::Vec2;\n"
 				"use crate::engine::App;\n"
 				"use crate::scripts::*;\n"
 				"use crate::helpers::*;\n"
@@ -340,36 +342,4 @@ function Rect_f32 st_buffer_region(Application_Links *app, View_ID view_id, Rect
 	}
 	
     return(region);
-}
-
-internal void
-st_set_all_default_hooks(Application_Links *app){
-	set_custom_hook(app, HookID_BufferViewerUpdate, default_view_adjust);
-	
-	set_custom_hook(app, HookID_ViewEventHandler, default_view_input_handler);
-	set_custom_hook(app, HookID_Tick, default_tick);
-	
-	// NOTE(Skytrias): new
-	set_custom_hook(app, HookID_RenderCaller, st_render_caller);
-#if 0
-	set_custom_hook(app, HookID_DeltaRule, original_delta);
-	set_custom_hook_memory_size(app, HookID_DeltaRule,
-								delta_ctx_size(original_delta_memory_size));
-#else
-	set_custom_hook(app, HookID_DeltaRule, fixed_time_cubic_delta);
-	set_custom_hook_memory_size(app, HookID_DeltaRule,
-								delta_ctx_size(fixed_time_cubic_delta_memory_size));
-#endif
-	set_custom_hook(app, HookID_BufferNameResolver, default_buffer_name_resolution);
-	
-	// NOTE(Skytrias): new
-	set_custom_hook(app, HookID_BeginBuffer, st_begin_buffer);
-	set_custom_hook(app, HookID_EndBuffer, end_buffer_close_jump_list);
-	set_custom_hook(app, HookID_NewFile, st_new_rust_file);
-	set_custom_hook(app, HookID_SaveFile, default_file_save);
-	set_custom_hook(app, HookID_BufferEditRange, default_buffer_edit_range);
-	// NOTE(Skytrias): new
-	set_custom_hook(app, HookID_BufferRegion, st_buffer_region);
-	
-	set_custom_hook(app, HookID_Layout, layout_unwrapped);
 }

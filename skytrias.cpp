@@ -4,7 +4,7 @@
 #if !defined(FCODER_DEFAULT_BINDINGS_CPP)
 #define FCODER_DEFAULT_BINDINGS_CPP
 
-#include <stdlib.h>
+//#include <stdlib.h>
 
 // NOTE(Skytrias): exports my snippets into the snippet lister, turn this off or include your own, additionally I'd recommend disabling the general snippets 
 #define SNIPPET_EXPANSION "rust_snippets.inc"
@@ -26,6 +26,8 @@ global Sound global_timer_end_sound = {};
 global Sound global_timer_paste_sound = {};
 global Sound global_timer_pause_sound = {};
 
+#include "generated/managed_id_metadata.cpp"
+
 #include "helpers.cpp"
 #include "custom_search.cpp"
 #include "auto_snippet.cpp"
@@ -37,7 +39,6 @@ global Sound global_timer_pause_sound = {};
 void
 custom_layer_init(Application_Links *app){
 	Thread_Context *tctx = get_thread_context(app);
-	
 	global_snippet_count = ArrayCount(default_snippets);
 	
 	// NOTE(allen): setup for default framework
@@ -50,10 +51,14 @@ custom_layer_init(Application_Links *app){
 	set_default_color_scheme(app);
 	
 	// NOTE(Skytrias): remove the old default hooks!
-	st_set_all_default_hooks(app);
+	set_all_default_hooks(app);
+	set_custom_hook(app, HookID_RenderCaller, st_render_caller);
+	set_custom_hook(app, HookID_BeginBuffer, st_begin_buffer);
+	set_custom_hook(app, HookID_NewFile, st_new_rust_file);
+	set_custom_hook(app, HookID_BufferRegion, st_buffer_region);
 	
 	mapping_init(tctx, &framework_mapping);
-	st_set_bindings(&framework_mapping);
+	st_set_bindings(&framework_mapping, mapid_global, mapid_file, mapid_code);
 	
 	InitAudioDevice();
     global_timer_start_sound = LoadSound("timer_start.mp3");
