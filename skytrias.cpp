@@ -35,6 +35,7 @@ global Sound global_timer_pause_sound = {};
 #include "todo_file.cpp"
 #include "timer.cpp"
 #include "render_highlight.cpp"
+#include "preview_goto.cpp"
 #include "bindings.cpp"
 
 void

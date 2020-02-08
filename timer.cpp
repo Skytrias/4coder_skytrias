@@ -171,9 +171,10 @@ CUSTOM_DOC("Places the timer stats onto the lind end of the cursor before the co
 		}
 		
 		// reset timer and stop it, simple subtract if the timer wasnt finished yet
-		if (global_timer.minutes == global_pomodoro_minutes ||
-			global_timer.minutes == global_short_break_minutes ||
-				global_timer.minutes == global_long_break_minutes) {
+		if (global_timer.seconds == 0 &&
+				(global_timer.minutes == global_pomodoro_minutes ||
+			 global_timer.minutes == global_short_break_minutes ||
+				 global_timer.minutes == global_long_break_minutes)) {
 			global_timer_on = 0;
 		} else {
 			global_timer_goal -= global_timer.minutes;

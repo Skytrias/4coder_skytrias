@@ -9,6 +9,7 @@ global u32 ARRAY_HIGHLIGHT_COLOR = 0xFFbc2f25;
 global u32 MACRO_HIGHLIGHT_COLOR = 0xFFB877DB;
 global u32 HACK_HIGHLIGHT_COLOR = 0xd08770FF;
 global u32 STRUCT_HIGHLIGHT_COLOR = 0xFF99db76;
+global u32 MARK_RANGE_HIGHLIGHT_COLOR = 0x0509F7A0; // should have low alpha!
 
 /*
 // NOTE(Skytrias): custom growth animation added to ryan squishy cursor
@@ -763,88 +764,116 @@ static void st_paint_tokens(Application_Links *app, Buffer_ID buffer, Text_Layou
 	}
 }
 
+// highlights the cursor to mark position with a rectangle 
+function void st_draw_cursor_mark_range(Application_Links *app, View_ID view_id, Face_ID face_id,
+										Buffer_ID buffer, Text_Layout_ID layout) {
+	i64 cursor_pos = view_get_cursor_pos(app, view_id);
+	i64 mark_pos = view_get_mark_pos(app, view_id);
+	
+	// NOTE(Skytrias): turn this on if you want out of boundary ranges to not be drawn
+	/*
+	Range_i64 visible_range = text_layout_get_visible_range(app, layout);
+	
+	if (!range_contains(visible_range, cursor_pos) || !range_contains(visible_range, mark_pos)) {
+	   return;
+	}
+	*/
+	
+	 Rect_f32 character = text_layout_character_on_screen(app, layout, cursor_pos);
+	 Rect_f32 mark_character = text_layout_character_on_screen(app, layout, mark_pos);
+	Rect_f32 region = text_layout_region(app, layout);
+	 Range_f32 xw = rect_range_x(region);
+	
+	Rect_f32 rect = Rf32_xy_wh(xw.min, character.y0, xw.max, mark_character.y0 - character.y0);
+	draw_rectangle(app, rect, 0.0f, MARK_RANGE_HIGHLIGHT_COLOR);
+}
+
 static void
 st_render_buffer(Application_Links *app, View_ID view_id, Face_ID face_id,
 				 Buffer_ID buffer, Text_Layout_ID text_layout_id,
 				 Rect_f32 rect, Frame_Info frame_info){
-    ProfileScope(app, "[Skytrias] render buffer");
-    
-    View_ID active_view = get_active_view(app, Access_Always);
-    b32 is_active_view = (active_view == view_id);
-    Rect_f32 prev_clip = draw_set_clip(app, rect);
-    
-    // NOTE(allen): Token colorizing
-    Token_Array token_array = get_token_array_from_buffer(app, buffer);
-    if (token_array.tokens != 0){
-        st_draw_cpp_token_colors(app, text_layout_id, &token_array);
-        
-        // NOTE(allen): Scan for TODOs and NOTEs
-        if (global_config.use_comment_keyword){
-            Comment_Highlight_Pair pairs[] = {
-                {string_u8_litexpr("NOTE"), finalize_color(defcolor_comment_pop, 0)},
-                {string_u8_litexpr("TODO"), finalize_color(defcolor_comment_pop, 1)},
-                {string_u8_litexpr("HACK"), HACK_HIGHLIGHT_COLOR},
-            };
-            draw_comment_highlights(app, buffer, text_layout_id,
-                                    &token_array, pairs, ArrayCount(pairs));
-        }
-    }
-    else{
-        Range_i64 visible_range = text_layout_get_visible_range(app, text_layout_id);
-        paint_text_color_fcolor(app, text_layout_id, visible_range, fcolor_id(defcolor_text_default));
-    }
-    
-    i64 cursor_pos = view_correct_cursor(app, view_id);
-    view_correct_mark(app, view_id);
-    
-    // NOTE(allen): Scope highlight
-    if (global_config.use_scope_highlight){
-        Color_Array colors = finalize_color_array(defcolor_back_cycle);
-        draw_scope_highlight(app, buffer, text_layout_id, cursor_pos, colors.vals, colors.count);
-    }
+	 ProfileScope(app, "[Skytrias] render buffer");
+	 
+	 View_ID active_view = get_active_view(app, Access_Always);
+	 b32 is_active_view = (active_view == view_id);
+	 Rect_f32 prev_clip = draw_set_clip(app, rect);
+	 
+	 // NOTE(allen): Token colorizing
+	 Token_Array token_array = get_token_array_from_buffer(app, buffer);
+	 if (token_array.tokens != 0){
+		st_draw_cpp_token_colors(app, text_layout_id, &token_array);
+		
+		// NOTE(allen): Scan for TODOs and NOTEs
+		if (global_config.use_comment_keyword){
+			Comment_Highlight_Pair pairs[] = {
+				{string_u8_litexpr("NOTE"), finalize_color(defcolor_comment_pop, 0)},
+				{string_u8_litexpr("TODO"), finalize_color(defcolor_comment_pop, 1)},
+				{string_u8_litexpr("HACK"), HACK_HIGHLIGHT_COLOR},
+			};
+			draw_comment_highlights(app, buffer, text_layout_id,
+									&token_array, pairs, ArrayCount(pairs));
+		}
+	 }
+	 else{
+		Range_i64 visible_range = text_layout_get_visible_range(app, text_layout_id);
+		paint_text_color_fcolor(app, text_layout_id, visible_range, fcolor_id(defcolor_text_default));
+	 }
+	 
+	 i64 cursor_pos = view_correct_cursor(app, view_id);
+	 view_correct_mark(app, view_id);
+	 
+	 // NOTE(allen): Scope highlight
+	 if (global_config.use_scope_highlight){
+		Color_Array colors = finalize_color_array(defcolor_back_cycle);
+		draw_scope_highlight(app, buffer, text_layout_id, cursor_pos, colors.vals, colors.count);
+	 }
 	
-    // NOTE(rjf): Brace highlight
-    {
-        ARGB_Color colors[] =
-        {
-            0xff8ffff2,
-        };
-        
-        Fleury4RenderBraceHighlight(app, buffer, text_layout_id, cursor_pos,
-                                    colors, sizeof(colors)/sizeof(colors[0]));
-    }
-    
-    if (global_config.use_error_highlight || global_config.use_jump_highlight){
-        // NOTE(allen): Error highlight
-        String_Const_u8 name = string_u8_litexpr("*compilation*");
-        Buffer_ID compilation_buffer = get_buffer_by_name(app, name, Access_Always);
-        if (global_config.use_error_highlight){
-            draw_jump_highlights(app, buffer, text_layout_id, compilation_buffer,
-                                 fcolor_id(defcolor_highlight_junk));
-        }
-        
-        // NOTE(allen): Search highlight
-        if (global_config.use_jump_highlight){
-            Buffer_ID jump_buffer = get_locked_jump_buffer(app);
-            if (jump_buffer != compilation_buffer){
-                draw_jump_highlights(app, buffer, text_layout_id, jump_buffer,
-                                     fcolor_id(defcolor_highlight_white));
-            }
-        }
-    }
-    
-    // NOTE(allen): Color parens
-    if (global_config.use_paren_helper){
-        Color_Array colors = finalize_color_array(defcolor_text_cycle);
-        draw_paren_highlight(app, buffer, text_layout_id, cursor_pos, colors.vals, colors.count);
-    }
+	 // NOTE(rjf): Brace highlight
+	 {
+		ARGB_Color colors[] =
+		{
+			0xff8ffff2,
+		};
+		
+		Fleury4RenderBraceHighlight(app, buffer, text_layout_id, cursor_pos,
+									colors, sizeof(colors)/sizeof(colors[0]));
+	 }
+	 
+	 if (global_config.use_error_highlight || global_config.use_jump_highlight){
+		// NOTE(allen): Error highlight
+		String_Const_u8 name = string_u8_litexpr("*compilation*");
+		Buffer_ID compilation_buffer = get_buffer_by_name(app, name, Access_Always);
+		if (global_config.use_error_highlight){
+			draw_jump_highlights(app, buffer, text_layout_id, compilation_buffer,
+								 fcolor_id(defcolor_highlight_junk));
+		}
+		
+		// NOTE(allen): Search highlight
+		if (global_config.use_jump_highlight){
+			Buffer_ID jump_buffer = get_locked_jump_buffer(app);
+			if (jump_buffer != compilation_buffer){
+				draw_jump_highlights(app, buffer, text_layout_id, jump_buffer,
+									 fcolor_id(defcolor_highlight_white));
+			}
+		}
+	 }
+	 
+	 // NOTE(allen): Color parens
+	 if (global_config.use_paren_helper){
+		Color_Array colors = finalize_color_array(defcolor_text_cycle);
+		draw_paren_highlight(app, buffer, text_layout_id, cursor_pos, colors.vals, colors.count);
+	 }
 	
-    // NOTE(Skytrias): word highlight before braces ()
-    st_paint_functions(app, buffer, text_layout_id);
-    st_paint_rust_macros(app, buffer, text_layout_id);
-    st_paint_rust_characters(app, buffer, text_layout_id);
+	 // NOTE(Skytrias): word highlight before braces ()
+	 st_paint_functions(app, buffer, text_layout_id);
+	 st_paint_rust_macros(app, buffer, text_layout_id);
+	 st_paint_rust_characters(app, buffer, text_layout_id);
 	//st_paint_rust_indent(app, buffer, text_layout_id);
-    st_paint_tokens(app, buffer, text_layout_id);
+	 st_paint_tokens(app, buffer, text_layout_id);
+	
+	if (is_active_view) {
+		st_draw_cursor_mark_range(app, view_id, buffer, face_id, text_layout_id);
+	}
 	
 	if (is_active_view) {
 		st_auto_snippet(app, view_id, buffer, face_id, text_layout_id);
@@ -855,129 +884,129 @@ st_render_buffer(Application_Links *app, View_ID view_id, Face_ID face_id,
 		st_update_timer(app, view_id, frame_info);
 	}
 	
-    // NOTE(allen): Line highlight
-    if (global_config.highlight_line_at_cursor && is_active_view){
-        i64 line_number = get_line_number_from_pos(app, buffer, cursor_pos);
-        draw_line_highlight(app, text_layout_id, line_number,
-                            fcolor_id(defcolor_highlight_cursor_line));
-    }
-    
-    // NOTE(allen): Cursor shape
-    Face_Metrics metrics = get_face_metrics(app, face_id);
-    f32 cursor_roundness = (metrics.normal_advance*0.5f)*0.9f;
-    f32 mark_thickness = 2.f;
-    
-    // NOTE(allen): Cursor
-    switch (fcoder_mode){
-        case FCoderMode_Original:
-        {
-            //st_render_cursor(app, view_id, is_active_view, buffer, text_layout_id, cursor_roundness, mark_thickness, frame_info);
+	 // NOTE(allen): Line highlight
+	 if (global_config.highlight_line_at_cursor && is_active_view){
+		i64 line_number = get_line_number_from_pos(app, buffer, cursor_pos);
+		draw_line_highlight(app, text_layout_id, line_number,
+							fcolor_id(defcolor_highlight_cursor_line));
+	 }
+	 
+	 // NOTE(allen): Cursor shape
+	 Face_Metrics metrics = get_face_metrics(app, face_id);
+	 f32 cursor_roundness = (metrics.normal_advance*0.5f)*0.9f;
+	 f32 mark_thickness = 2.f;
+	 
+	 // NOTE(allen): Cursor
+	 switch (fcoder_mode){
+		case FCoderMode_Original:
+		{
+			//st_render_cursor(app, view_id, is_active_view, buffer, text_layout_id, cursor_roundness, mark_thickness, frame_info);
 			
 			
 			draw_original_4coder_style_cursor_mark_highlight(app, view_id, is_active_view, buffer, text_layout_id, cursor_roundness, mark_thickness);
 		}break;
-        case FCoderMode_NotepadLike:
-        {
-            draw_notepad_style_cursor_highlight(app, view_id, buffer, text_layout_id, cursor_roundness);
-        }break;
-    }
-    
-    // NOTE(allen): put the actual text on the actual screen
-    draw_text_layout_default(app, text_layout_id);
-    
+		case FCoderMode_NotepadLike:
+		{
+			draw_notepad_style_cursor_highlight(app, view_id, buffer, text_layout_id, cursor_roundness);
+		}break;
+	 }
+	 
+	 // NOTE(allen): put the actual text on the actual screen
+	 draw_text_layout_default(app, text_layout_id);
+	 
 	if (global_todo_margin_open && view_id == global_todo_view && global_todo_view != -1) {
 		st_draw_todo_note(app, view_id, buffer, text_layout_id);
 		st_draw_todo_important_tasks(app, view_id, buffer, text_layout_id, face_id);
 		st_draw_todo_tasks(app, view_id, buffer, text_layout_id, face_id);
 	}
 	
-    // NOTE(rjf): Brace annotations
-    {
-        Fleury4RenderCloseBraceAnnotation(app, buffer, text_layout_id, cursor_pos);
-    }
-    
-    // NOTE(rjf): Brace lines
-    {
-        Fleury4RenderBraceLines(app, buffer, view_id, text_layout_id, cursor_pos);
-    }
-    
-    // NOTE(rjf): Draw code peek
-    if(global_code_peek_open)
-    {
+	 // NOTE(rjf): Brace annotations
+	 {
+		Fleury4RenderCloseBraceAnnotation(app, buffer, text_layout_id, cursor_pos);
+	 }
+	 
+	 // NOTE(rjf): Brace lines
+	 {
+		Fleury4RenderBraceLines(app, buffer, view_id, text_layout_id, cursor_pos);
+	 }
+	 
+	 // NOTE(rjf): Draw code peek
+	 if(global_code_peek_open)
+	 {
 		if (is_active_view) {
 			Fleury4RenderRangeHighlight(app, view_id, text_layout_id, global_code_peek_token_range);
 			st_render_code_peek(app, active_view, face_id, buffer, frame_info);
 		}
 	}
 	
-    draw_set_clip(app, prev_clip);
+	 draw_set_clip(app, prev_clip);
 }
 
 // default file_bar draw call with macro recording highlighted in red
 static void
 st_draw_file_bar(Application_Links *app, View_ID view_id, Buffer_ID buffer, Face_ID face_id, Rect_f32 bar, f32 delta, b32 is_active_view){
-    Scratch_Block scratch(app);
-    
-    // NOTE(Skytrias): when recording, highlight file bar
-    if (global_keyboard_macro_is_recording) {
-        draw_rectangle_fcolor(app, bar, 0.f, fcolor_blend(fcolor_id(defcolor_bar), 0.75f, f_red, 0.25f));
-    } else {
-        draw_rectangle_fcolor(app, bar, 0.f, fcolor_id(defcolor_bar));
-    }
-    
-    FColor base_color = fcolor_id(defcolor_base);
-    FColor pop2_color = fcolor_id(defcolor_pop2);
-    
-    i64 cursor_position = view_get_cursor_pos(app, view_id);
-    Buffer_Cursor cursor = view_compute_cursor(app, view_id, seek_pos(cursor_position));
-    
-    Fancy_Line list = {};
-    String_Const_u8 unique_name = push_buffer_unique_name(app, scratch, buffer);
-    push_fancy_string(scratch, &list, base_color, unique_name);
-    push_fancy_stringf(scratch, &list, base_color, " - Row: %3.lld Col: %3.lld -", cursor.line, cursor.col);
-    
-    Managed_Scope scope = buffer_get_managed_scope(app, buffer);
-    Line_Ending_Kind *eol_setting = scope_attachment(app, scope, buffer_eol_setting,
-                                                     Line_Ending_Kind);
-    switch (*eol_setting){
-        case LineEndingKind_Binary:
-        {
-            push_fancy_string(scratch, &list, base_color, string_u8_litexpr(" bin"));
-        }break;
-        
-        case LineEndingKind_LF:
-        {
-            push_fancy_string(scratch, &list, base_color, string_u8_litexpr(" lf"));
-        }break;
-        
-        case LineEndingKind_CRLF:
-        {
-            push_fancy_string(scratch, &list, base_color, string_u8_litexpr(" crlf"));
-        }break;
-    }
-    
+	 Scratch_Block scratch(app);
+	 
+	 // NOTE(Skytrias): when recording, highlight file bar
+	 if (global_keyboard_macro_is_recording) {
+		draw_rectangle_fcolor(app, bar, 0.f, fcolor_blend(fcolor_id(defcolor_bar), 0.75f, f_red, 0.25f));
+	 } else {
+		draw_rectangle_fcolor(app, bar, 0.f, fcolor_id(defcolor_bar));
+	 }
+	 
+	 FColor base_color = fcolor_id(defcolor_base);
+	 FColor pop2_color = fcolor_id(defcolor_pop2);
+	 
+	 i64 cursor_position = view_get_cursor_pos(app, view_id);
+	 Buffer_Cursor cursor = view_compute_cursor(app, view_id, seek_pos(cursor_position));
+	 
+	 Fancy_Line list = {};
+	 String_Const_u8 unique_name = push_buffer_unique_name(app, scratch, buffer);
+	 push_fancy_string(scratch, &list, base_color, unique_name);
+	 push_fancy_stringf(scratch, &list, base_color, " - Row: %3.lld Col: %3.lld -", cursor.line, cursor.col);
+	 
+	 Managed_Scope scope = buffer_get_managed_scope(app, buffer);
+	 Line_Ending_Kind *eol_setting = scope_attachment(app, scope, buffer_eol_setting,
+													 Line_Ending_Kind);
+	 switch (*eol_setting){
+		case LineEndingKind_Binary:
+		{
+			push_fancy_string(scratch, &list, base_color, string_u8_litexpr(" bin"));
+		}break;
+		
+		case LineEndingKind_LF:
+		{
+			push_fancy_string(scratch, &list, base_color, string_u8_litexpr(" lf"));
+		}break;
+		
+		case LineEndingKind_CRLF:
+		{
+			push_fancy_string(scratch, &list, base_color, string_u8_litexpr(" crlf"));
+		}break;
+	 }
+	 
 	// only draw timer on the active view
 	if (is_active_view && (!st_timer_zero() || global_timer_on)) {
-		String_Const_u8 result = push_u8_stringf(scratch, " - Time: %02d:%02d:%02d - Goal: %d min ", global_timer.hours, global_timer.minutes, global_timer.seconds, global_timer_goal);
+		String_Const_u8 result = push_u8_stringf(scratch, " - Time: %02d:%02d:%02d Goal: %d min ", global_timer.hours, global_timer.minutes, global_timer.seconds, global_timer_goal);
 		push_fancy_string(scratch, &list, base_color, result);
 	}
 	
-    {
-        Dirty_State dirty = buffer_get_dirty_state(app, buffer);
-        u8 space[3];
-        String_u8 str = Su8(space, 0, 3);
-        if (dirty != 0){
-            string_append(&str, string_u8_litexpr(" "));
-        }
-        if (HasFlag(dirty, DirtyState_UnsavedChanges)){
-            string_append(&str, string_u8_litexpr("*"));
-        }
-        if (HasFlag(dirty, DirtyState_UnloadedChanges)){
-            string_append(&str, string_u8_litexpr("!"));
-        }
-        push_fancy_string(scratch, &list, pop2_color, str.string);
-    }
-    
+	 {
+		Dirty_State dirty = buffer_get_dirty_state(app, buffer);
+		u8 space[3];
+		String_u8 str = Su8(space, 0, 3);
+		if (dirty != 0){
+			string_append(&str, string_u8_litexpr(" "));
+		}
+		if (HasFlag(dirty, DirtyState_UnsavedChanges)){
+			string_append(&str, string_u8_litexpr("*"));
+		}
+		if (HasFlag(dirty, DirtyState_UnloadedChanges)){
+			string_append(&str, string_u8_litexpr("!"));
+		}
+		push_fancy_string(scratch, &list, pop2_color, str.string);
+	 }
+	 
 	Vec2_f32 p = bar.p0 + V2f32(2.f, 2.f);
 	draw_fancy_line(app, face_id, fcolor_zero(), &list, p);
 }
@@ -985,70 +1014,70 @@ st_draw_file_bar(Application_Links *app, View_ID view_id, Buffer_ID buffer, Face
 // NOTE(Skytrias): pretty much just custom scroll speed and render_buffer
 function void
 st_render_caller(Application_Links *app, Frame_Info frame_info, View_ID view_id){
-    ProfileScope(app, "skytrias render caller");
-    View_ID active_view = get_active_view(app, Access_Always);
-    b32 is_active_view = (active_view == view_id);
-    
-    Rect_f32 region = draw_background_and_margin(app, view_id, is_active_view);
-    Rect_f32 prev_clip = draw_set_clip(app, region);
-    
-    Buffer_ID buffer = view_get_buffer(app, view_id, Access_Always);
-    Face_ID face_id = get_face_id(app, buffer);
-    Face_Metrics face_metrics = get_face_metrics(app, face_id);
-    f32 line_height = face_metrics.line_height;
-    f32 digit_advance = face_metrics.decimal_digit_advance;
-    
-    // NOTE(allen): file bar
-    b64 showing_file_bar = false;
-    if (view_get_setting(app, view_id, ViewSetting_ShowFileBar, &showing_file_bar) && showing_file_bar){
-        Rect_f32_Pair pair = layout_file_bar_on_top(region, line_height);
-        st_draw_file_bar(app, view_id, buffer, face_id, pair.min, frame_info.animation_dt, is_active_view);
-        region = pair.max;
-    }
-    
-    Buffer_Scroll scroll = view_get_buffer_scroll(app, view_id);
-    
-    // NOTE(Skytrias): faster scrolling like alpha
-    Buffer_Point_Delta_Result delta = delta_apply(app, view_id,
-                                                  frame_info.animation_dt * 1.125f, scroll);
-    if (!block_match_struct(&scroll.position, &delta.point)){
-        block_copy_struct(&scroll.position, &delta.point);
-        view_set_buffer_scroll(app, view_id, scroll, SetBufferScroll_NoCursorChange);
-    }
-    if (delta.still_animating){
-        animate_in_n_milliseconds(app, 0);
-    }
-    
-    // NOTE(allen): query bars
-    {
-        Query_Bar *space[32];
-        Query_Bar_Ptr_Array query_bars = {};
-        query_bars.ptrs = space;
-        if (get_active_query_bars(app, view_id, ArrayCount(space), &query_bars)){
-            for (i32 i = 0; i < query_bars.count; i += 1){
-                Rect_f32_Pair pair = layout_query_bar_on_top(region, line_height, 1);
-                draw_query_bar(app, query_bars.ptrs[i], face_id, pair.min);
-                region = pair.max;
-            }
-        }
-    }
-    
-    // NOTE(allen): FPS hud
-    if (show_fps_hud){
-        Rect_f32_Pair pair = layout_fps_hud_on_bottom(region, line_height);
-        draw_fps_hud(app, frame_info, face_id, pair.max);
-        region = pair.min;
-        animate_in_n_milliseconds(app, 1000);
-    }
-    
-    // NOTE(allen): layout line numbers
-    Rect_f32 line_number_rect = {};
-    if (global_config.show_line_number_margins){
-        Rect_f32_Pair pair = layout_line_number_margin(app, buffer, region, digit_advance);
-        line_number_rect = pair.min;
-        region = pair.max;
-    }
-    
+	 ProfileScope(app, "skytrias render caller");
+	 View_ID active_view = get_active_view(app, Access_Always);
+	 b32 is_active_view = (active_view == view_id);
+	 
+	 Rect_f32 region = draw_background_and_margin(app, view_id, is_active_view);
+	 Rect_f32 prev_clip = draw_set_clip(app, region);
+	 
+	 Buffer_ID buffer = view_get_buffer(app, view_id, Access_Always);
+	 Face_ID face_id = get_face_id(app, buffer);
+	 Face_Metrics face_metrics = get_face_metrics(app, face_id);
+	 f32 line_height = face_metrics.line_height;
+	 f32 digit_advance = face_metrics.decimal_digit_advance;
+	 
+	 // NOTE(allen): file bar
+	 b64 showing_file_bar = false;
+	 if (view_get_setting(app, view_id, ViewSetting_ShowFileBar, &showing_file_bar) && showing_file_bar){
+		Rect_f32_Pair pair = layout_file_bar_on_top(region, line_height);
+		st_draw_file_bar(app, view_id, buffer, face_id, pair.min, frame_info.animation_dt, is_active_view);
+		region = pair.max;
+	 }
+	 
+	 Buffer_Scroll scroll = view_get_buffer_scroll(app, view_id);
+	 
+	 // NOTE(Skytrias): faster scrolling like alpha
+	 Buffer_Point_Delta_Result delta = delta_apply(app, view_id,
+												  frame_info.animation_dt * 1.125f, scroll);
+	 if (!block_match_struct(&scroll.position, &delta.point)){
+		block_copy_struct(&scroll.position, &delta.point);
+		view_set_buffer_scroll(app, view_id, scroll, SetBufferScroll_NoCursorChange);
+	 }
+	 if (delta.still_animating){
+		animate_in_n_milliseconds(app, 0);
+	 }
+	 
+	 // NOTE(allen): query bars
+	 {
+		Query_Bar *space[32];
+		Query_Bar_Ptr_Array query_bars = {};
+		query_bars.ptrs = space;
+		if (get_active_query_bars(app, view_id, ArrayCount(space), &query_bars)){
+			for (i32 i = 0; i < query_bars.count; i += 1){
+				Rect_f32_Pair pair = layout_query_bar_on_top(region, line_height, 1);
+				draw_query_bar(app, query_bars.ptrs[i], face_id, pair.min);
+				region = pair.max;
+			}
+		}
+	 }
+	 
+	 // NOTE(allen): FPS hud
+	 if (show_fps_hud){
+		Rect_f32_Pair pair = layout_fps_hud_on_bottom(region, line_height);
+		draw_fps_hud(app, frame_info, face_id, pair.max);
+		region = pair.min;
+		animate_in_n_milliseconds(app, 1000);
+	 }
+	 
+	 // NOTE(allen): layout line numbers
+	 Rect_f32 line_number_rect = {};
+	 if (global_config.show_line_number_margins){
+		Rect_f32_Pair pair = layout_line_number_margin(app, buffer, region, digit_advance);
+		line_number_rect = pair.min;
+		region = pair.max;
+	 }
+	 
 	// NOTE(Skytrias): layout for todo margin
 	Rect_f32 todo_number_rect = {};
 	if (global_todo_margin_open && global_debug_sidebar && view_id == global_todo_view && global_todo_view != -1) {
@@ -1057,23 +1086,23 @@ st_render_caller(Application_Links *app, Frame_Info frame_info, View_ID view_id)
 		region = pair.max;
 	}
 	
-    // NOTE(allen): begin buffer render
-    Buffer_Point buffer_point = scroll.position;
-    Text_Layout_ID text_layout_id = text_layout_create(app, buffer, region, buffer_point);
-    
-    // NOTE(allen): draw line numbers
-    if (global_config.show_line_number_margins){
-        //draw_line_number_margin(app, view_id, buffer, face_id, text_layout_id, line_number_rect);
-    }
-    
+	 // NOTE(allen): begin buffer render
+	 Buffer_Point buffer_point = scroll.position;
+	 Text_Layout_ID text_layout_id = text_layout_create(app, buffer, region, buffer_point);
+	 
+	 // NOTE(allen): draw line numbers
+	 if (global_config.show_line_number_margins){
+		//draw_line_number_margin(app, view_id, buffer, face_id, text_layout_id, line_number_rect);
+	 }
+	 
 	// NOTE(Skytrias): layout for todo margin generatedd
 	if (global_todo_margin_open && global_debug_sidebar && view_id == global_todo_view && global_todo_view != -1) {
 		st_draw_todo_numbers_margin(app, view_id, buffer, text_layout_id, face_id, todo_number_rect);
 	}
 	
-    // NOTE(allen): draw the buffer
-    st_render_buffer(app, view_id, face_id, buffer, text_layout_id, region, frame_info);
-    
-    text_layout_free(app, text_layout_id);
-    draw_set_clip(app, prev_clip);
+	 // NOTE(allen): draw the buffer
+	 st_render_buffer(app, view_id, face_id, buffer, text_layout_id, region, frame_info);
+	 
+	 text_layout_free(app, text_layout_id);
+	 draw_set_clip(app, prev_clip);
 }

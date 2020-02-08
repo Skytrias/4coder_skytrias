@@ -124,7 +124,7 @@ st_set_bindings(Mapping *mapping, i64 global_id, i64 file_id, i64 code_id)
     Bind(st_search,                      KeyCode_F, KeyCode_Control);
     Bind(list_all_locations,          KeyCode_F, KeyCode_Control, KeyCode_Shift);
     Bind(list_all_substring_locations_case_insensitive, KeyCode_F, KeyCode_Alt);
-    Bind(goto_line,                   KeyCode_G, KeyCode_Control);
+    Bind(st_goto_line,                   KeyCode_G, KeyCode_Control);
     Bind(list_all_locations_of_selection,  KeyCode_G, KeyCode_Control, KeyCode_Shift);
     Bind(snippet_lister,              KeyCode_J, KeyCode_Control);
     Bind(kill_buffer,                 KeyCode_K, KeyCode_Control, KeyCode_Shift);
