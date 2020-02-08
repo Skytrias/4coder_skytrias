@@ -11,6 +11,20 @@ CUSTOM_DOC("Attempts to close 4coder.")
 	send_exit_signal(app);
 }
 
+CUSTOM_COMMAND_SIG(st_passive_buffer_on)
+CUSTOM_DOC("Makes a buffer passive")
+{
+	View_ID view_id = get_active_view(app, Access_ReadWriteVisible);
+	view_set_passive(app, view_id, 1);
+}
+
+CUSTOM_COMMAND_SIG(st_passive_buffer_off)
+CUSTOM_DOC("Makes a buffer non passive")
+{
+	View_ID view_id = get_active_view(app, Access_ReadWriteVisible);
+	view_set_passive(app, view_id, 0);
+}
+
 // NOTE(Skytrias): own preferences to keybindings
 static void
 st_set_bindings(Mapping *mapping, i64 global_id, i64 file_id, i64 code_id)
@@ -126,7 +140,7 @@ st_set_bindings(Mapping *mapping, i64 global_id, i64 file_id, i64 code_id)
     Bind(st_search_identifier,           KeyCode_T, KeyCode_Control);
     Bind(list_all_locations_of_identifier, KeyCode_T, KeyCode_Control, KeyCode_Shift);
     Bind(paste_and_indent,            KeyCode_V, KeyCode_Control);
-    Bind(paste_next_and_indent,       KeyCode_V, KeyCode_Control, KeyCode_Shift);
+    //Bind(paste_next_and_indent,       KeyCode_V, KeyCode_Control, KeyCode_Shift);
     Bind(cut,                         KeyCode_X, KeyCode_Control);
     Bind(redo,                        KeyCode_Y, KeyCode_Control);
     Bind(undo,                        KeyCode_Z, KeyCode_Control);
@@ -177,10 +191,20 @@ st_set_bindings(Mapping *mapping, i64 global_id, i64 file_id, i64 code_id)
 	Bind(st_todo_insert_task_important, KeyCode_3, KeyCode_Alt);
 	Bind(st_todo_remove_task, KeyCode_4, KeyCode_Alt);
 	// NOTE(Skytrias): timer shortcuts
-	Bind(st_todo_start_timer, KeyCode_1, KeyCode_Shift, KeyCode_Control);
-	Bind(st_todo_pause_timer, KeyCode_2, KeyCode_Shift, KeyCode_Control);
-	Bind(st_todo_paste_timer, KeyCode_3, KeyCode_Shift, KeyCode_Control);
-	Bind(st_todo_restart_timer, KeyCode_4, KeyCode_Shift, KeyCode_Control);
+	Bind(st_pomodoro_start, KeyCode_1, KeyCode_Shift, KeyCode_Control);
+	Bind(st_short_break_start, KeyCode_2, KeyCode_Shift, KeyCode_Control);
+	Bind(st_long_break_start, KeyCode_3, KeyCode_Shift, KeyCode_Control);
+	Bind(st_pause_timer, KeyCode_4, KeyCode_Shift, KeyCode_Control);
+	Bind(st_stop_timer, KeyCode_5, KeyCode_Shift, KeyCode_Control);
+	Bind(st_paste_timer, KeyCode_V, KeyCode_Shift, KeyCode_Control);
+	
+	// NOTE(Skytrias): panel options
+	Bind(open_panel_vsplit, KeyCode_V, KeyCode_Alt);
+	Bind(open_panel_hsplit, KeyCode_H, KeyCode_Alt);
+	Bind(close_panel, KeyCode_C, KeyCode_Alt);
+	Bind(st_passive_buffer_on, KeyCode_P, KeyCode_Alt);
+	Bind(st_passive_buffer_off, KeyCode_P, KeyCode_Shift, KeyCode_Alt);
+	Bind(st_todo_toggle, KeyCode_A, KeyCode_Alt);
 	
     // NOTE(Skytrias): custom bindings
     {
@@ -336,7 +360,7 @@ function Rect_f32 st_buffer_region(Application_Links *app, View_ID view_id, Rect
     }
 	
 	// NOTE(Skytrias): testing todo
-	if (global_todo_margin_open) {
+	if (global_todo_margin_open && global_debug_sidebar) {
 		Rect_f32_Pair pair = st_layout_todo_number_margin(app, region, digit_advance);
 		region = pair.max;
 	}

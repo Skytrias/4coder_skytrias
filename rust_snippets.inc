@@ -18,7 +18,7 @@
 {"fnx",     "pub fn (&self) {\n\n}", 7, 13,},
 {"defy",     "impl Default for  {\nfn default() -> Self {\nSelf {\n\n}\n}\n}", 17, 50},
 {"defx",     "Default::default()", 18, 0},
-{"defc",     "..Default::default()", 20, 0},
+{"defc",     "\n..Default::default()", 0, 1},
 {"newy",     "impl  {\npub fn new() -> Self {\nSelf {\n\n..Default::default()\n}\n}\n}", 5, 38},
 {"newx",     "pub fn new() -> Self {\nSelf {\n\n}\n}", 11, 30},
 {"appy", "app: &mut App, ", 15, 0},

@@ -9,6 +9,7 @@ sm_op("[!]", "TaskImportant");
 global u32 NOTE_COLOR = 0x11FFFFFF;
 
 // globals
+global b32 global_debug_sidebar = 0;
 global View_ID global_todo_view = -1;
 global b32 global_todo_margin_open = 0;
 global i32 global_todo_margin_digit_width = 5;
@@ -16,25 +17,6 @@ global i32 global_todo_margin_digit_width = 5;
 // TODO(Skytrias): dont use define
 #define COUNTER_AMOUNT 5
 global i64 indent_counters[COUNTER_AMOUNT] = { 0, 0, 0, 0, 0 };
-
-// timer 
-struct Timer {
-	f32 ticks; // addition of dt till range for 1 second add is reached
-	i32 seconds; 
-	i32 minutes;
-	i32 hours;
-};
-
-global Timer global_timer = {};
-global b32 global_timer_on = 0;
-// the higher the longer the timer takes to increase, 2 works on 120 hz, 1 on 60 probably 
-global f32 global_timer_speed = 2.0f;
-global b32 global_timer_is_pomodoro = 1;
-global i32 global_pomodori_counter = 0;
-global b32 global_pomodori_on_break = 1;
-global i32 global_pomodori_stop_minutes = 25;
-global i32 global_pomodori_short_break_minutes = 5;
-global i32 global_pomodori_long_break_minutes = 20;
 
 // helpers for generic tokens
 
@@ -196,7 +178,7 @@ function void st_draw_todo_numbers_margin(Application_Links *app, View_ID view_i
 		// line info
 		i64 line_start = get_line_start_pos(app, buffer, i);
 		i64 line_end = get_line_end_pos(app, buffer, i);
-		Indent_Info indent_info = get_indent_info_line_number_and_start(app, buffer, i, line_start, 1);
+		Indent_Info indent_info = get_indent_info_line_number_and_start(app, buffer, i, line_start, 2);
 		i64 tab = indent_info.indent_pos;
 		
 		// all tokens
@@ -306,7 +288,7 @@ function void st_draw_todo_tasks(Application_Links *app, View_ID view_id, Buffer
 		// line info
 		i64 line_start = get_line_start_pos(app, buffer, i);
 		i64 line_end = get_line_end_pos(app, buffer, i);
-		Indent_Info indent_info = get_indent_info_line_number_and_start(app, buffer, i, line_start, 1);
+		Indent_Info indent_info = get_indent_info_line_number_and_start(app, buffer, i, line_start, 2);
 		i64 tab = indent_info.indent_pos;
 		
 		// all tokens
@@ -326,7 +308,7 @@ function void st_draw_todo_tasks(Application_Links *app, View_ID view_id, Buffer
 				// line info
 				i64 other_line_start = get_line_start_pos(app, buffer, j);
 				i64 other_line_end = get_line_end_pos(app, buffer, j);
-				Indent_Info other_indent_info = get_indent_info_line_number_and_start(app, buffer, j, other_line_start, 1);
+				Indent_Info other_indent_info = get_indent_info_line_number_and_start(app, buffer, j, other_line_start, 2);
 				i64 other_tab = other_indent_info.indent_pos;
 				
 				// skip blanks
@@ -565,230 +547,6 @@ CUSTOM_DOC("Interactively open a file out of the file system and turns on todo h
     }
 }
 
-// timer specific commands
-
-// returns true if a "TIME" token exists in the line
-function b32 st_line_timer_token_exists(Application_Links *app, Buffer_ID buffer, Token_Array *array, i64 line_start_number, i64 line_end_number) {
-	if (array->tokens != 0){
-		Token_Iterator_Array it = token_iterator_pos(buffer, array, line_end_number);
-		
-		for (;;) {
-			Token *token = token_it_read(&it);
-			
-			if (token->pos < line_start_number) {
-				return 0;
-			}
-			
-			if (token->sub_kind == TokenCppKind_Time) {
-				return 1;
-			}
-			
-			if (!token_it_dec_non_whitespace(&it)) {
-				return 0;
-			}
-		}
-	}
-	
-	return 0;
-}
-
-CUSTOM_COMMAND_SIG(st_todo_start_timer)
-CUSTOM_DOC("Starts the timer") {
-	if (!global_timer_on) {
-		PlaySound(global_timer_start_sound);
-		
-		// switch between stop and break time on restart
-		if (global_timer_is_pomodoro) {
-			global_pomodori_on_break = !global_pomodori_on_break;
-		}
-		
-		global_timer_on = 1;
-	}
-}
-
-CUSTOM_COMMAND_SIG(st_todo_restart_timer)
-CUSTOM_DOC("Starts the timer") {
-	PlaySound(global_timer_restart_sound);
-	global_timer_on = 0;
-	global_timer.hours = 0;
-	global_timer.minutes = 0;
-	global_timer.seconds = 0;
-}
-
-CUSTOM_COMMAND_SIG(st_todo_pause_timer)
-CUSTOM_DOC("Stop the timer") {
-	if (global_timer_on) {
-		if (global_timer_is_pomodoro) {
-			global_pomodori_on_break = !global_pomodori_on_break;
-		}
-		
-		PlaySound(global_timer_pause_sound);
-		global_timer_on = 0;
-	}
-}
-
-// returns true if the timer hasnt counted up yet
-function b32 st_timer_zero(Timer *timer) {
-	return timer->hours == 0 && timer->minutes == 0 && timer->seconds == 0;   
-}
-
-CUSTOM_COMMAND_SIG(st_todo_paste_timer)
-CUSTOM_DOC("Places the timer stats onto the lind end of the cursor before the comma") {
-	if (st_timer_zero(&global_timer)) {
-		return;
-	}
-	
-	View_ID view = get_active_view(app, Access_ReadWriteVisible);
-	Buffer_ID buffer = view_get_buffer(app, view, Access_ReadWriteVisible);
-	
-	i64 pos = view_get_cursor_pos(app, view);
-	i64 line_start_number = get_line_start_pos_from_pos(app, buffer, pos); 
-	i64 line_end_number = get_line_end_pos_from_pos(app, buffer, pos); 
-	
-	Token_Array token_array = get_token_array_from_buffer(app, buffer);
-	Scratch_Block scratch(app);
-	
-	b32 comma_token = st_end_token_match(app, buffer, &token_array, line_end_number, TokenCppKind_Comma);
-	
-	if (comma_token) {
-		b32 time_token = st_line_timer_token_exists(app, buffer, &token_array, line_start_number, line_end_number);
-		
-		// NOTE(Skytrias): IF YOU CHANGE THE FORMAT OF THE TIME PASTED, YOU ALSO HAVE TO CHANGE THE READING VERSION OF IT
-		// if no time token was found, add new time entirely
-		if (!time_token) {
-			String_Const_u8 result = result = push_u8_stringf(
-															  scratch, 
-															  "\tTime: %02d:%02d:%02d,", 
-															  global_timer.hours, 
-															  global_timer.minutes, 
-															  global_timer.seconds
-															  );
-			buffer_replace_range(app, buffer, Ii64(line_end_number - 1, line_end_number), result);
-		} else {
-			// get the existing values back from the string line, add them to the current timer
-			Range_i64 seconds_range = Ii64(line_end_number - 3, line_end_number - 1);
-			String_Const_u8 seconds_string = push_buffer_range(app, scratch, buffer, seconds_range);
-			i32 old_seconds = (i32) string_to_integer(seconds_string, 10);
-			
-			Range_i64 minutes_range = Ii64(line_end_number - 6, line_end_number - 4);
-			String_Const_u8 minutes_string = push_buffer_range(app, scratch, buffer, minutes_range);
-			i32 old_minutes = (i32) string_to_integer(minutes_string, 10);
-			
-			Range_i64 hours_range = Ii64(line_end_number - 9, line_end_number - 7);
-			String_Const_u8 hours_string = push_buffer_range(app, scratch, buffer, hours_range);
-			i32 old_hours = (i32) string_to_integer(hours_string, 10);
-			
-			i32 new_seconds = old_seconds;
-			i32 new_minutes = old_minutes;
-			i32 new_hours = old_hours;
-			
-			// add to the recent time if not on break
-			if (!global_pomodori_on_break) {
-				new_seconds = global_timer.seconds + old_seconds;
-				new_minutes = global_timer.minutes + old_minutes;
-				new_hours = global_timer.hours + old_hours;
-				if (new_seconds > 60) {
-					new_seconds -= 60;
-					new_minutes += 1;
-				} 
-				if (new_minutes > 60) {
-					new_minutes -= 60;
-					new_hours += 1;
-				} 
-			}
-			
-			String_Const_u8 result = result = push_u8_stringf(
-															  scratch, 
-															  "\tTime: %02d:%02d:%02d,", 
-															  new_hours,
-															  new_minutes,
-															  new_seconds
-															  );
-			
-			PlaySound(global_timer_paste_sound);
-			// if it does exist, redo the numbers
-			buffer_replace_range(app, buffer, Ii64(line_end_number - result.size, line_end_number), result);
-		}
-		
-		// reset timer and stop it
-		global_timer.seconds = 0;
-		global_timer.minutes = 0;
-		global_timer.hours = 0;
-		global_timer_on = 0;
-	}
-}
-
-CUSTOM_COMMAND_SIG(st_todo_slow_timer)
-CUSTOM_DOC("Decreases the speed the timer ticks at") {
-	global_timer_speed *= 1.5; 
-}
-
-CUSTOM_COMMAND_SIG(st_todo_fast_timer)
-CUSTOM_DOC("Increases the speed the timer ticks at") {
-	global_timer_speed *= 0.5;
-}
-
-// updates the timer to the newest dt
-function void st_update_timer(Application_Links *app, Frame_Info frame_info, Timer *timer) {
-	// pomodoro specific
-	if (global_timer_on && global_timer_is_pomodoro) {
-		if (global_pomodori_on_break) {
-			if (global_pomodori_counter == 4) {
-				if (timer->minutes == global_pomodori_long_break_minutes) {
-					PlaySound(global_timer_end_sound);
-					global_timer_on = 0;
-					// reset the pomodori counter
-					global_pomodori_counter = 0;
-				}
-			} else {
-				if (timer->minutes == global_pomodori_short_break_minutes) {
-					PlaySound(global_timer_end_sound);
-					global_timer_on = 0;
-				}
-			}
-		} else {
-			if (timer->minutes == global_pomodori_stop_minutes) {
-				PlaySound(global_timer_end_sound);
-				global_timer_on = 0;
-				global_pomodori_counter += 1;
-			}
-		}
-		
-	} 
-	
-	if (!global_timer_on) {
-		return;
-	}
-	
-	timer->ticks += frame_info.literal_dt;
-	
-	// NOTE(Skytrias): timer that doesnt use % for performance
-	if (timer->seconds < 60) {
-		// TODO(Skytrias): adjust this to refresh rate?
-		if (timer->ticks > 1.0f * global_timer_speed) {
-			timer->seconds += 1;
-			timer->ticks = 0.0f;
-		}
-	} else {
-		timer->seconds = 0;
-		
-		if (timer->minutes < 60) {
-			timer->minutes += 1;
-		} else {
-			timer->minutes = 0;
-			
-			if (timer->hours < 24) {
-				timer->hours += 1;
-			} else {
-				// NOTE(Skytrias): huh no day counting
-				timer->hours = 0;
-			}
-		}
-	}
-}
-
-// other draw commands
-
 // draw the line / scope highlight for important tasks
 function void st_draw_todo_important_tasks(Application_Links *app, View_ID view_id, Buffer_ID buffer, Text_Layout_ID text_layout_id, Face_ID face_id) {
 	Token_Array token_array = get_token_array_from_buffer(app, buffer);
@@ -810,7 +568,7 @@ function void st_draw_todo_important_tasks(Application_Links *app, View_ID view_
 		// line info
 		i64 line_start = get_line_start_pos(app, buffer, i);
 		i64 line_end = get_line_end_pos(app, buffer, i);
-		Indent_Info indent_info = get_indent_info_line_number_and_start(app, buffer, i, line_start, 1);
+		Indent_Info indent_info = get_indent_info_line_number_and_start(app, buffer, i, line_start, 2);
 		i64 tab = indent_info.indent_pos;
 		
 		
@@ -846,7 +604,7 @@ function void st_draw_todo_important_tasks(Application_Links *app, View_ID view_
 				
 				// line info
 				i64 other_line_start = get_line_start_pos(app, buffer, j);
-				Indent_Info other_indent_info = get_indent_info_line_number_and_start(app, buffer, j, other_line_start, 1);
+				Indent_Info other_indent_info = get_indent_info_line_number_and_start(app, buffer, j, other_line_start, 2);
 				i64 other_tab = other_indent_info.indent_pos;
 				
 				if (tab == other_tab) {

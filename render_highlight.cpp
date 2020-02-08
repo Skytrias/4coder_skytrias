@@ -1,14 +1,16 @@
 // cursor animation variables
-global f32 global_cursor_limit = 0.0f;
-global u32 global_cursor_reached = 0;
-global f32 global_cursor_growth_speed = 0.0f;
+//global f32 global_cursor_limit = 0.0f;
+//global u32 global_cursor_reached = 0;
+//global f32 global_cursor_growth_speed = 0.0f;
 
 // additional colors
 global u32 FUNCTION_HIGHLIGHT_COLOR = 0xFF25B2BC;
+global u32 ARRAY_HIGHLIGHT_COLOR = 0xFFbc2f25;
 global u32 MACRO_HIGHLIGHT_COLOR = 0xFFB877DB;
 global u32 HACK_HIGHLIGHT_COLOR = 0xd08770FF;
 global u32 STRUCT_HIGHLIGHT_COLOR = 0xFF99db76;
 
+/*
 // NOTE(Skytrias): custom growth animation added to ryan squishy cursor
 static void
 st_render_cursor(Application_Links *app, View_ID view_id, b32 is_active_view,
@@ -84,23 +86,24 @@ st_render_cursor(Application_Links *app, View_ID view_id, b32 is_active_view,
 				draw_rectangle(app, rect, roundness, fcolor_resolve(cursor_color));
             }
             
-            paint_text_color_pos(app, text_layout_id, cursor_pos,
-                                 fcolor_id(defcolor_at_cursor));
-            draw_character_wire_frame(app, text_layout_id, mark_pos,
-                                      roundness, outline_thickness,
-                                      fcolor_id(defcolor_mark));
-        }
-        else
-        {
-            draw_character_wire_frame(app, text_layout_id, mark_pos,
-                                      roundness, outline_thickness,
-                                      fcolor_id(defcolor_mark));
-            draw_character_wire_frame(app, text_layout_id, cursor_pos,
-                                      roundness, outline_thickness,
-                                      fcolor_id(defcolor_cursor));
-        }
-    }
+paint_text_color_pos(app, text_layout_id, cursor_pos,
+					 fcolor_id(defcolor_at_cursor));
+draw_character_wire_frame(app, text_layout_id, mark_pos,
+						  roundness, outline_thickness,
+						  fcolor_id(defcolor_mark));
 }
+else
+{
+	draw_character_wire_frame(app, text_layout_id, mark_pos,
+							  roundness, outline_thickness,
+							  fcolor_id(defcolor_mark));
+	draw_character_wire_frame(app, text_layout_id, cursor_pos,
+							  roundness, outline_thickness,
+							  fcolor_id(defcolor_cursor));
+}
+}
+}
+*/
 
 static f32
 MinimumF32(f32 a, f32 b)
@@ -413,7 +416,7 @@ st_get_token_color_cpp(Token token){
                 case TokenCppKind_Colon:
                 case TokenCppKind_Arrow:
                 
-				// NOTE(Skytrias): todo based
+				// NOTE(Skytrias): todo based, rebuild your lexer_cpp 
 				case TokenCppKind_TaskComplete:
                 case TokenCppKind_TaskCanceled:
                 case TokenCppKind_TaskImportant:
@@ -500,8 +503,12 @@ function void st_paint_functions(Application_Links *app, Buffer_ID buffer, Text_
 				
 				// NOTE(Skytrias): use your own colorscheme her via fcolor_id(defcolor_*)
 				// NOTE(Skytrias): or set the color you'd like to use globally like i do
-                paint_text_color(app, text_layout_id, range, FUNCTION_HIGHLIGHT_COLOR);
-                
+                if (token->sub_kind == TokenCppKind_ParenOp){
+					paint_text_color(app, text_layout_id, range, FUNCTION_HIGHLIGHT_COLOR);
+				} else {
+					paint_text_color(app, text_layout_id, range, ARRAY_HIGHLIGHT_COLOR);
+				}
+				
                 end_pos = 0;
                 start_pos = 0;
             }
@@ -843,6 +850,11 @@ st_render_buffer(Application_Links *app, View_ID view_id, Face_ID face_id,
 		st_auto_snippet(app, view_id, buffer, face_id, text_layout_id);
 	}
 	
+	// NOTE(Skytrias): timer stuff
+	if (global_timer_on || is_active_view) {
+		st_update_timer(app, view_id, frame_info);
+	}
+	
     // NOTE(allen): Line highlight
     if (global_config.highlight_line_at_cursor && is_active_view){
         i64 line_number = get_line_number_from_pos(app, buffer, cursor_pos);
@@ -877,11 +889,6 @@ st_render_buffer(Application_Links *app, View_ID view_id, Face_ID face_id,
 		st_draw_todo_note(app, view_id, buffer, text_layout_id);
 		st_draw_todo_important_tasks(app, view_id, buffer, text_layout_id, face_id);
 		st_draw_todo_tasks(app, view_id, buffer, text_layout_id, face_id);
-	}
-	
-	// NOTE(Skytrias): timer stuff
-	if (global_timer_on) {
-		st_update_timer(app, frame_info, &global_timer);
 	}
 	
     // NOTE(rjf): Brace annotations
@@ -949,6 +956,12 @@ st_draw_file_bar(Application_Links *app, View_ID view_id, Buffer_ID buffer, Face
         }break;
     }
     
+	// only draw timer on the active view
+	if (is_active_view && (!st_timer_zero() || global_timer_on)) {
+		String_Const_u8 result = push_u8_stringf(scratch, " - Time: %02d:%02d:%02d - Goal: %d min ", global_timer.hours, global_timer.minutes, global_timer.seconds, global_timer_goal);
+		push_fancy_string(scratch, &list, base_color, result);
+	}
+	
     {
         Dirty_State dirty = buffer_get_dirty_state(app, buffer);
         u8 space[3];
@@ -965,36 +978,6 @@ st_draw_file_bar(Application_Links *app, View_ID view_id, Buffer_ID buffer, Face
         push_fancy_string(scratch, &list, pop2_color, str.string);
     }
     
-	// only draw timer on the active view
-	if (is_active_view && (!st_timer_zero(&global_timer) || global_timer_on)) {
-		if (global_timer_is_pomodoro) {
-			FColor pomodoro_color = base_color;
-			
-			if (global_pomodori_on_break) {
-				if (global_pomodori_counter == 4) {
-					if (global_timer.minutes > global_pomodori_long_break_minutes - 1) {
-						pomodoro_color = f_green;
-					}
-				} else {
-					if (global_timer.minutes > global_pomodori_short_break_minutes - 1) {
-						pomodoro_color = f_green;
-					}
-				}
-			} else {
-				if (global_timer.minutes > global_pomodori_stop_minutes - 1) {
-					pomodoro_color = f_red;
-				}
-			}
-			
-			String_Const_u8 result = push_u8_stringf(scratch, "\t%02d:%02d:%02d", global_timer.hours, global_timer.minutes, global_timer.seconds);
-			push_fancy_string(scratch, &list, pomodoro_color, result);
-		} else {
-			// default timer drawing
-			String_Const_u8 result = push_u8_stringf(scratch, "\t%02d:%02d:%02d", global_timer.hours, global_timer.minutes, global_timer.seconds);
-			push_fancy_string(scratch, &list, base_color, result);
-		}
-	}
-	
 	Vec2_f32 p = bar.p0 + V2f32(2.f, 2.f);
 	draw_fancy_line(app, face_id, fcolor_zero(), &list, p);
 }
@@ -1068,7 +1051,7 @@ st_render_caller(Application_Links *app, Frame_Info frame_info, View_ID view_id)
     
 	// NOTE(Skytrias): layout for todo margin
 	Rect_f32 todo_number_rect = {};
-	if (global_todo_margin_open && view_id == global_todo_view && global_todo_view != -1) {
+	if (global_todo_margin_open && global_debug_sidebar && view_id == global_todo_view && global_todo_view != -1) {
 		Rect_f32_Pair pair = st_layout_todo_number_margin(app, region, digit_advance);
 		todo_number_rect = pair.min;
 		region = pair.max;
@@ -1084,7 +1067,7 @@ st_render_caller(Application_Links *app, Frame_Info frame_info, View_ID view_id)
     }
     
 	// NOTE(Skytrias): layout for todo margin generatedd
-	if (global_todo_margin_open && view_id == global_todo_view && global_todo_view != -1) {
+	if (global_todo_margin_open && global_debug_sidebar && view_id == global_todo_view && global_todo_view != -1) {
 		st_draw_todo_numbers_margin(app, view_id, buffer, text_layout_id, face_id, todo_number_rect);
 	}
 	
