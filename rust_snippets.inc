@@ -11,7 +11,7 @@
 {"forj",     "for j in 0.. {\n\n}", 12, 15},
 {"forx",     "for x in 0.. {\n\n}", 12, 15},
 {"fory",     "for y in 0.. {\n\n}", 12, 15},
-{"forn",     "for   in  {\n\n}", 4, 9},
+{"forn",     "for  in  {\n\n}", 4, 8},
 
 // y and x versions of the same things
 {"fny",     "pub fn (&mut self) {\n\n}", 7, 18},
@@ -28,8 +28,9 @@
 {"implx",     "impl  for  {\nfn () {\n\n}\n}", 5, 10},
 {"cratey", "use crate::::*;", 11, 14},
 {"cratex", "crate::::();", 7, 9},
-{"pry", "println!(\"{}\", );", 15, 10},
+{"pry", "println!(\"{}\", );", 15, 11},
 {"prx", "println!(\"\");", 10, 11},
+{"prc", "println!(\"{:?}\", );", 17, 11},
 
 // default ones that you rarely write or deviate from
 {"match", "match  {\n => ,\n_ => {}\n}", 6, 9},
@@ -40,3 +41,9 @@
 // special ones
 {"derive", "#[derive()]", 9, 0},
 {"allow", "#[allow()]", 8, 0},
+
+// helpers? dont use snippets for these, instead do this manually?
+//{"\"", "\"\"", 1, 2},
+//{"{", "{}", 1, 2},
+//{"(", "()", 1, 2},
+//w{"[", "[]", 1, 2},

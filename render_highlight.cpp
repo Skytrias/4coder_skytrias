@@ -1,122 +1,10 @@
-// cursor animation variables
-//global f32 global_cursor_limit = 0.0f;
-//global u32 global_cursor_reached = 0;
-//global f32 global_cursor_growth_speed = 0.0f;
-
 // additional colors
 global u32 FUNCTION_HIGHLIGHT_COLOR = 0xFF25B2BC;
-global u32 ARRAY_HIGHLIGHT_COLOR = 0xFFbc2f25;
+global u32 ARRAY_HIGHLIGHT_COLOR = 0xFFbc25b2;
 global u32 MACRO_HIGHLIGHT_COLOR = 0xFFB877DB;
 global u32 HACK_HIGHLIGHT_COLOR = 0xd08770FF;
 global u32 STRUCT_HIGHLIGHT_COLOR = 0xFF99db76;
 global u32 MARK_RANGE_HIGHLIGHT_COLOR = 0x0509F7A0; // should have low alpha!
-
-/*
-// NOTE(Skytrias): custom growth animation added to ryan squishy cursor
-static void
-st_render_cursor(Application_Links *app, View_ID view_id, b32 is_active_view,
-				 Buffer_ID buffer, Text_Layout_ID text_layout_id,
-				 f32 roundness, f32 outline_thickness, Frame_Info frame_info)
-{
-    b32 has_highlight_range = draw_highlight_range(app, view_id, buffer, text_layout_id, roundness);
-    
-    if (!has_highlight_range) {
-        i64 cursor_pos = view_get_cursor_pos(app, view_id);
-        i64 mark_pos = view_get_mark_pos(app, view_id);
-        
-        if (is_active_view)
-        {
-            // NOTE(rjf): Draw cursor.
-            {
-                static Rect_f32 rect = {0};
-                Rect_f32 target_rect = text_layout_character_on_screen(app, text_layout_id, cursor_pos);
-                Rect_f32 last_rect = rect;
-                
-                // NOTE(Skytrias): counter with delta time
-				f32 size = 10.0f;
-				if (!global_cursor_reached) {
-					if (global_cursor_limit < 1.0f) {
-						global_cursor_growth_speed = 4.0f;
-						global_cursor_limit += frame_info.animation_dt * global_cursor_growth_speed;
-					} else {
-						global_cursor_reached = 1;
-					}
-				} else {
-					if (global_cursor_limit > 0) {
-						global_cursor_growth_speed = 2.5f;
-						global_cursor_limit -= frame_info.animation_dt * global_cursor_growth_speed;
-					} else {
-						global_cursor_reached = 0;
-					}
-				}
-				
-                float x_change = (target_rect.x0 - rect.x0);
-                float y_change = (target_rect.y0 - rect.y0);
-                float cursor_size_x = (target_rect.x1 - target_rect.x0);
-                float cursor_size_y = (target_rect.y1 - target_rect.y0) * (1 + fabsf(y_change) / 60.f);
-				
-				animate_in_n_milliseconds(app, 0);
-                
-                rect.x0 += x_change * frame_info.animation_dt * 14.f;
-                rect.y0 += y_change * frame_info.animation_dt * 14.f;
-                rect.x1 = (rect.x0 + cursor_size_x);
-                rect.y1 = (rect.y0 + cursor_size_y);
-                
-				f32 growth = global_cursor_limit * size / 6.0f;
-				rect.x0 -= growth / 8.0f;
-				rect.x1 += growth * 1.5f;
-				
-                if(target_rect.y0 > last_rect.y0) {
-                    if(rect.y0 < last_rect.y0) {
-                        rect.y0 = last_rect.y0;
-                    }
-                }
-                else {
-                    if(rect.y1 > last_rect.y1) {
-                        rect.y1 = last_rect.y1;
-                    }
-                }
-                
-                FColor cursor_color = fcolor_id(defcolor_cursor);
-                
-                if(global_keyboard_macro_is_recording) {
-                    cursor_color = fcolor_argb(0xffde40df);
-                }
-                
-                // NOTE(rjf): Draw main cursor.
-				draw_rectangle(app, rect, roundness, fcolor_resolve(cursor_color));
-            }
-            
-paint_text_color_pos(app, text_layout_id, cursor_pos,
-					 fcolor_id(defcolor_at_cursor));
-draw_character_wire_frame(app, text_layout_id, mark_pos,
-						  roundness, outline_thickness,
-						  fcolor_id(defcolor_mark));
-}
-else
-{
-	draw_character_wire_frame(app, text_layout_id, mark_pos,
-							  roundness, outline_thickness,
-							  fcolor_id(defcolor_mark));
-	draw_character_wire_frame(app, text_layout_id, cursor_pos,
-							  roundness, outline_thickness,
-							  fcolor_id(defcolor_cursor));
-}
-}
-}
-*/
-
-static f32
-MinimumF32(f32 a, f32 b)
-{
-    return a < b ? a : b;
-}
-
-static f32
-MaximumF32(f32 a, f32 b)
-{
-    return a > b ? a : b;
-}
 
 static void
 Fleury4RenderBraceHighlight(Application_Links *app, Buffer_ID buffer, Text_Layout_ID text_layout_id,
@@ -249,8 +137,8 @@ Fleury4RenderCloseBraceAnnotation(Application_Links *app, Buffer_ID buffer, Text
         // NOTE(rjf): Draw.
         if(start_token)
 		{
-            draw_string(app, face_id, string_u8_litexpr("<-"), close_scope_pos, finalize_color(defcolor_comment, 0));
-            close_scope_pos.x += 32;
+            //draw_string(app, face_id, string_u8_litexpr("<-"), close_scope_pos, finalize_color(defcolor_comment, 0));
+            //close_scope_pos.x += 32;
             String_Const_u8 start_line = push_buffer_line(app, scratch, buffer,
                                                           get_line_number_from_pos(app, buffer, start_token->pos));
             
@@ -340,42 +228,13 @@ Fleury4RenderBraceLines(Application_Links *app, Buffer_ID buffer, View_ID view,
         line_rect.x1 = x_position+1;
         line_rect.y0 = y_start;
         line_rect.y1 = y_end;
-        u32 color = finalize_color(defcolor_comment, 0);
-        color &= 0x00ffffff;
-        color |= 0x60000000;
-        draw_rectangle(app, line_rect, 0.5f, color);
+		FColor color = fcolor_change_alpha(fcolor_id(defcolor_comment), 0.15f);
+        draw_rectangle_fcolor(app, line_rect, 0.5f, color);
         
         x_position += metrics.space_advance * 4;
         
     }
 }
-
-static void
-Fleury4RenderRangeHighlight(Application_Links *app, View_ID view_id, Text_Layout_ID text_layout_id,
-                            Range_i64 range)
-{
-    Rect_f32 range_start_rect = text_layout_character_on_screen(app, text_layout_id, range.start);
-    Rect_f32 range_end_rect = text_layout_character_on_screen(app, text_layout_id, range.end-1);
-    Rect_f32 total_range_rect = {0};
-    total_range_rect.x0 = MinimumF32(range_start_rect.x0, range_end_rect.x0);
-    total_range_rect.y0 = MinimumF32(range_start_rect.y0, range_end_rect.y0);
-    total_range_rect.x1 = MaximumF32(range_start_rect.x1, range_end_rect.x1);
-    total_range_rect.y1 = MaximumF32(range_start_rect.y1, range_end_rect.y1);
-    
-    ARGB_Color background_color = fcolor_resolve(fcolor_id(defcolor_pop2));
-    float background_color_r = (float)((background_color & 0x00ff0000) >> 16) / 255.f;
-    float background_color_g = (float)((background_color & 0x0000ff00) >>  8) / 255.f;
-    float background_color_b = (float)((background_color & 0x000000ff) >>  0) / 255.f;
-    background_color_r += (1.f - background_color_r) * 0.5f;
-    background_color_g += (1.f - background_color_g) * 0.5f;
-    background_color_b += (1.f - background_color_b) * 0.5f;
-    ARGB_Color highlight_color = (0x75000000 |
-                                  (((u32)(background_color_r * 255.f)) << 16) |
-								  (((u32)(background_color_g * 255.f)) <<  8) |
-								  (((u32)(background_color_b * 255.f)) <<  0));
-    draw_rectangle(app, total_range_rect, 4.f, highlight_color);
-}
-
 
 // NOTE(Skytrias): custom token coloring
 function FColor
@@ -771,13 +630,11 @@ function void st_draw_cursor_mark_range(Application_Links *app, View_ID view_id,
 	i64 mark_pos = view_get_mark_pos(app, view_id);
 	
 	// NOTE(Skytrias): turn this on if you want out of boundary ranges to not be drawn
-	/*
 	Range_i64 visible_range = text_layout_get_visible_range(app, layout);
 	
 	if (!range_contains(visible_range, cursor_pos) || !range_contains(visible_range, mark_pos)) {
-	   return;
+		return;
 	}
-	*/
 	
 	 Rect_f32 character = text_layout_character_on_screen(app, layout, cursor_pos);
 	 Rect_f32 mark_character = text_layout_character_on_screen(app, layout, mark_pos);
@@ -786,6 +643,47 @@ function void st_draw_cursor_mark_range(Application_Links *app, View_ID view_id,
 	
 	Rect_f32 rect = Rf32_xy_wh(xw.min, character.y0, xw.max, mark_character.y0 - character.y0);
 	draw_rectangle(app, rect, 0.0f, MARK_RANGE_HIGHLIGHT_COLOR);
+}
+
+function void
+tv_colorize_hex_colors(Application_Links *app, Buffer_ID buffer, Text_Layout_ID text_layout_id)
+{
+    Scratch_Block scratch(app);
+    Range_i64 visible_range = text_layout_get_visible_range(app, text_layout_id);
+    String_Const_u8 text = push_buffer_range(app, scratch, buffer, visible_range);
+    
+    for (i64 index = visible_range.min; text.size > 0;) {
+        if (text.size >= 2+8 && text.str[0] == '0' && (text.str[1] == 'x' || text.str[1] == 'X')) {
+            text = string_skip(text, 2);
+            index += 2;
+            
+            b32 looks_like_hex_number = true;
+            for (i32 i = 0; i < 8; i++) {
+                char c = text.str[i];
+                if (!((c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F') || (c >= '0' && c <= '9'))) {
+                    looks_like_hex_number = false;
+                    break;
+                }
+            }
+            if (!looks_like_hex_number) {
+                continue;
+            }
+            
+            String_Const_u8 hex_text = string_prefix(text, 8);
+            u32 color = (u32)string_to_integer(hex_text, 16);
+            
+            paint_text_color(app, text_layout_id, Ii64_size(index - 1, 1), color);
+            
+            paint_text_color(app, text_layout_id, Ii64_size(index - 2, 1), color);
+            draw_character_block(app, text_layout_id, Ii64_size(index - 2, 1), 2.0f, color);
+            
+            text = string_skip(text, 8);
+            index += 8;
+        } else {
+            text = string_skip(text, 1);
+            index += 1;
+        }
+    }
 }
 
 static void
@@ -819,9 +717,18 @@ st_render_buffer(Application_Links *app, View_ID view_id, Face_ID face_id,
 		paint_text_color_fcolor(app, text_layout_id, visible_range, fcolor_id(defcolor_text_default));
 	 }
 	 
-	 i64 cursor_pos = view_correct_cursor(app, view_id);
+	i64 cursor_pos = view_correct_cursor(app, view_id);
 	 view_correct_mark(app, view_id);
 	 
+	// NOTE(Skytrias): tv hex colorizing
+	Scratch_Block scratch(app);
+    String_Const_u8 buffer_name = push_buffer_base_name(app, scratch, buffer);        
+    if (string_match_insensitive(string_prefix(buffer_name, 6), string_u8_litexpr("theme-")) &&
+        string_match_insensitive(string_postfix(buffer_name, 7), string_u8_litexpr(".4coder")))
+    {
+        tv_colorize_hex_colors(app,  buffer, text_layout_id);
+    }
+	
 	 // NOTE(allen): Scope highlight
 	 if (global_config.use_scope_highlight){
 		Color_Array colors = finalize_color_array(defcolor_back_cycle);
@@ -829,7 +736,8 @@ st_render_buffer(Application_Links *app, View_ID view_id, Face_ID face_id,
 	 }
 	
 	 // NOTE(rjf): Brace highlight
-	 {
+	 /*
+	{
 		ARGB_Color colors[] =
 		{
 			0xff8ffff2,
@@ -838,7 +746,8 @@ st_render_buffer(Application_Links *app, View_ID view_id, Face_ID face_id,
 		Fleury4RenderBraceHighlight(app, buffer, text_layout_id, cursor_pos,
 									colors, sizeof(colors)/sizeof(colors[0]));
 	 }
-	 
+	 */
+	
 	 if (global_config.use_error_highlight || global_config.use_jump_highlight){
 		// NOTE(allen): Error highlight
 		String_Const_u8 name = string_u8_litexpr("*compilation*");
@@ -930,15 +839,6 @@ st_render_buffer(Application_Links *app, View_ID view_id, Face_ID face_id,
 		Fleury4RenderBraceLines(app, buffer, view_id, text_layout_id, cursor_pos);
 	 }
 	 
-	 // NOTE(rjf): Draw code peek
-	 if(global_code_peek_open)
-	 {
-		if (is_active_view) {
-			Fleury4RenderRangeHighlight(app, view_id, text_layout_id, global_code_peek_token_range);
-			st_render_code_peek(app, active_view, face_id, buffer, frame_info);
-		}
-	}
-	
 	 draw_set_clip(app, prev_clip);
 }
 

@@ -34,6 +34,18 @@ st_seek_string_insensitive_backward(Application_Links *app, Buffer_ID buffer, i6
     }
 }
 
+// NOTE(Skytrias): manual center with a position that can be set yourself
+function void 
+st_center_view(Application_Links *app, View_ID view, i64 new_pos) {
+	Rect_f32 region = view_get_buffer_region(app, view);
+	Buffer_Cursor cursor = view_compute_cursor(app, view, seek_pos(new_pos));
+	f32 view_height = rect_height(region);
+	Buffer_Scroll scroll = view_get_buffer_scroll(app, view);
+	scroll.target.line_number = cursor.line;
+	scroll.target.pixel_shift.y = -view_height*0.5f;
+	view_set_buffer_scroll(app, view, scroll, SetBufferScroll_SnapCursorIntoView);
+}
+
 // NOTE(Skytrias): search doesnt include any result in a comment line
 function void
 st_isearch(Application_Links *app, Scan_Direction start_scan, i64 first_pos,
@@ -84,7 +96,7 @@ st_isearch(Application_Links *app, Scan_Direction start_scan, i64 first_pos,
             break;
         }
 		
-        String_Const_u8 string = to_writable(&in);
+		String_Const_u8 string = to_writable(&in);
 		
         b32 string_change = false;
         if (match_key_code(&in, KeyCode_Return) ||
@@ -154,7 +166,8 @@ st_isearch(Application_Links *app, Scan_Direction start_scan, i64 first_pos,
                     i64 new_pos = 0;
                     st_seek_string_insensitive_forward(app, buffer, pos - 1, 0, bar.string, &new_pos);
                     if (new_pos != -1 && new_pos < buffer_size){
-                        pos = new_pos;
+                        st_center_view(app, view, new_pos);
+						pos = new_pos;
                         match_size = bar.string.size;
                     }
                 }break;
@@ -164,7 +177,8 @@ st_isearch(Application_Links *app, Scan_Direction start_scan, i64 first_pos,
                     i64 new_pos = 0;
                     st_seek_string_insensitive_backward(app, buffer, pos + 1, 0, bar.string, &new_pos);
                     if (new_pos != -1 && new_pos >= 0){
-                        pos = new_pos;
+                        st_center_view(app, view, new_pos);
+						pos = new_pos;
                         match_size = bar.string.size;
                     }
                 }break;
@@ -178,7 +192,8 @@ st_isearch(Application_Links *app, Scan_Direction start_scan, i64 first_pos,
                     i64 new_pos = 0;
                     st_seek_string_insensitive_forward(app, buffer, pos, 0, bar.string, &new_pos);
                     if (new_pos != -1 && new_pos < buffer_size){
-                        pos = new_pos;
+                        st_center_view(app, view, new_pos);
+						pos = new_pos;
                         match_size = bar.string.size;
                     }
                 }break;
@@ -188,7 +203,8 @@ st_isearch(Application_Links *app, Scan_Direction start_scan, i64 first_pos,
                     i64 new_pos = 0;
                     st_seek_string_insensitive_backward(app, buffer, pos, 0, bar.string, &new_pos);
                     if (new_pos != -1 && new_pos >= 0){
-                        pos = new_pos;
+                        st_center_view(app, view, new_pos);
+						pos = new_pos;
                         match_size = bar.string.size;
                     }
                 }break;

@@ -67,7 +67,8 @@ st_query_user_general(Application_Links *app, Query_Bar *bar, View_ID view, b32 
 			
 			i32 line_number = (i32) string_to_integer(bar->string, 10);
 			view_set_cursor_and_preferred_x(app, view, seek_line_col(line_number, 0));
-        }
+			center_view(app);
+		}
         else{
             leave_current_input_unhandled(app);
         }
@@ -94,5 +95,6 @@ CUSTOM_DOC("Queries the user for a number, and jumps the cursor to the correspon
 	// if query stops in between, go back to the starting line number 
 	if (!st_query_user_general(app, &bar, view, true)) {
         view_set_cursor_and_preferred_x(app, view, seek_line_col(start_line_number, 0));
+		center_view(app);
 	}
 }

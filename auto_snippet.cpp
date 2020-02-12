@@ -37,11 +37,13 @@ st_write_text(Application_Links *app, String_Const_u8 insert){
 				c == ';' ||
 				c == '.' ||
 				c == ',' ||
+				c == ')' ||
 				c == '(' ||
-					   c == ')' ||
-				c == '|' ||
-				c == '\t' ||
-				c == '\n') {
+					   c == '[' ||
+							  c == ']' ||
+					   c == '|' ||
+					   c == '\t' ||
+					   c == '\n') {
 				global_snippet_cursor_set = 0;
 			} else {
 				// if nothing has been set, set it and its first position

@@ -31,7 +31,6 @@ global Sound global_timer_pause_sound = {};
 #include "helpers.cpp"
 #include "custom_search.cpp"
 #include "auto_snippet.cpp"
-#include "code_peek.cpp"
 #include "todo_file.cpp"
 #include "timer.cpp"
 #include "render_highlight.cpp"

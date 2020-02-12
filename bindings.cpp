@@ -14,14 +14,14 @@ CUSTOM_DOC("Attempts to close 4coder.")
 CUSTOM_COMMAND_SIG(st_passive_buffer_on)
 CUSTOM_DOC("Makes a buffer passive")
 {
-	View_ID view_id = get_active_view(app, Access_ReadWriteVisible);
+	View_ID view_id = get_active_view(app, Access_ReadVisible);
 	view_set_passive(app, view_id, 1);
 }
 
 CUSTOM_COMMAND_SIG(st_passive_buffer_off)
 CUSTOM_DOC("Makes a buffer non passive")
 {
-	View_ID view_id = get_active_view(app, Access_ReadWriteVisible);
+	View_ID view_id = get_active_view(app, Access_ReadVisible);
 	view_set_passive(app, view_id, 0);
 }
 
@@ -205,14 +205,6 @@ st_set_bindings(Mapping *mapping, i64 global_id, i64 file_id, i64 code_id)
 	Bind(st_passive_buffer_on, KeyCode_P, KeyCode_Alt);
 	Bind(st_passive_buffer_off, KeyCode_P, KeyCode_Shift, KeyCode_Alt);
 	Bind(st_todo_toggle, KeyCode_A, KeyCode_Alt);
-	
-    // NOTE(Skytrias): custom bindings
-    {
-        Bind(fleury_code_peek,          KeyCode_Alt, KeyCode_Control);
-        Bind(fleury_close_code_peek,    KeyCode_Escape);
-        Bind(fleury_code_peek_go,       KeyCode_Return, KeyCode_Control);
-        Bind(st_backwards_code_peek, KeyCode_Tab, KeyCode_Control);
-    }
 }
 
 // NOTE(Skytrias): my custom settings when creating a new rs file, probably will change a lot
