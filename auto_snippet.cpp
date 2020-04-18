@@ -1,7 +1,7 @@
 static u32 SNIPPET_HIGHLIGHT_COLOR = 0x3325B2BC;
 
-// highlights the word youre writing  
-global b32 global_snippet_word_highlight_on = 1; // NOTE(Skytrias): DISABLE this if you dont want words to be highlighted, this just helps a lot to see bugs appear, 
+// highlights the word youre writing
+global b32 global_snippet_word_highlight_on = 1; // NOTE(Skytrias): DISABLE this if you dont want words to be highlighted, this just helps a lot to see bugs appear,
 global Range_i64 global_snippet_cursor_range = {};
 global b32 global_snippet_cursor_set = 0;
 // if the start of the word you write doesnt match the current one, stop auto snippet
@@ -21,7 +21,7 @@ st_write_text(Application_Links *app, String_Const_u8 insert){
         i64 pos = view_get_cursor_pos(app, view);
         pos = view_get_character_legal_pos_from_pos(app, view, pos);
 		
-		// NOTE(Skytrias): save position of character written for snippet automation 
+		// NOTE(Skytrias): save position of character written for snippet automation
 		{
 			char c = insert.str[0];
 			
@@ -39,11 +39,11 @@ st_write_text(Application_Links *app, String_Const_u8 insert){
 				c == ',' ||
 				c == ')' ||
 				c == '(' ||
-					   c == '[' ||
-							  c == ']' ||
-					   c == '|' ||
-					   c == '\t' ||
-					   c == '\n') {
+                c == '[' ||
+                c == ']' ||
+                c == '|' ||
+                c == '\t' ||
+                c == '\n') {
 				global_snippet_cursor_set = 0;
 			} else {
 				// if nothing has been set, set it and its first position
@@ -51,7 +51,7 @@ st_write_text(Application_Links *app, String_Const_u8 insert){
 					global_snippet_cursor_set = 1;
 					global_snippet_cursor_range.start = pos;
 					global_snippet_start_line = get_line_number_from_pos(app, buffer, pos);
-				} 
+				}
 			}
 		}
 		
@@ -90,6 +90,27 @@ st_write_text(Application_Links *app, String_Const_u8 insert){
         // NOTE(allen): finish updating the cursor
         if (edit_success){
             view_set_cursor_and_preferred_x(app, view, seek_pos(pos + insert.size));
+        }
+        
+        char c = insert.str[0];
+        if (c == '{') {
+            buffer_replace_range(app, buffer, Ii64(pos + insert.size), string_u8_litexpr("}"));
+        }
+        
+        if (c == '[') {
+            buffer_replace_range(app, buffer, Ii64(pos + insert.size), string_u8_litexpr("]"));
+        }
+        
+        if (c == '(') {
+            buffer_replace_range(app, buffer, Ii64(pos + insert.size), string_u8_litexpr(")"));
+        }
+        
+        if (c == '\"') {
+            buffer_replace_range(app, buffer, Ii64(pos + insert.size), string_u8_litexpr("\""));
+        }
+        
+        if (c == '\'') {
+            buffer_replace_range(app, buffer, Ii64(pos + insert.size), string_u8_litexpr("\'"));
         }
     }
 }
@@ -157,7 +178,7 @@ function void st_auto_snippet(Application_Links *app, View_ID view_id, Buffer_ID
 		
 		// visual help
 		if (global_snippet_word_highlight_on) {
-			// Simple rect 
+			// Simple rect
 			Rect_f32 character_rect = text_layout_character_on_screen(app, text_layout_id, global_snippet_cursor_range.start);
 			Face_Metrics face_metrics = get_face_metrics(app, face_id);
 			f32 x = character_rect.x0;
@@ -211,10 +232,10 @@ function void st_auto_snippet(Application_Links *app, View_ID view_id, Buffer_ID
 		}
 		
 		if (result.size > 0) {
-			// remove any whitespace 
+			// remove any whitespace
 			result = string_skip_whitespace(result);
 			
-			// loop through snippet names and match with result 
+			// loop through snippet names and match with result
 			Snippet *snippet = default_snippets;
 			for (i32 i = 0; i < global_snippet_count; i += 1, snippet += 1){
 				if (string_match(result, SCu8(snippet->name))){
@@ -225,5 +246,5 @@ function void st_auto_snippet(Application_Links *app, View_ID view_id, Buffer_ID
 				}
 			}
 		}
-	}		
+	}
 }

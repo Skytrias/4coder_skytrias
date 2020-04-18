@@ -1,13 +1,6 @@
 CUSTOM_COMMAND_SIG(st_exit_4coder)
 CUSTOM_DOC("Attempts to close 4coder.")
 {
-    UnloadSound(global_timer_start_sound); 
-    UnloadSound(global_timer_end_sound); 
-    UnloadSound(global_timer_paste_sound); 
-    UnloadSound(global_timer_pause_sound); 
-    UnloadSound(global_timer_restart_sound); 
-	CloseAudioDevice();
-	
 	send_exit_signal(app);
 }
 
@@ -36,13 +29,12 @@ st_set_bindings(Mapping *mapping, i64 global_id, i64 file_id, i64 code_id)
     BindCore(default_startup, CoreCode_Startup);
     BindCore(default_try_exit, CoreCode_TryExit);
     Bind(keyboard_macro_start_recording , KeyCode_U, KeyCode_Control);
-    Bind(keyboard_macro_finish_recording, KeyCode_U, KeyCode_Control, KeyCode_Shift);
+    Bind(keyboard_macro_finish_recording, KeyCode_U, KeyCode_Control, KeyCode_Alt);
     Bind(keyboard_macro_replay,           KeyCode_U, KeyCode_Alt);
     Bind(change_active_panel,           KeyCode_Comma, KeyCode_Control);
     Bind(change_active_panel_backwards, KeyCode_Comma, KeyCode_Control, KeyCode_Shift);
     Bind(interactive_new,               KeyCode_N, KeyCode_Control);
-    // NOTE(Skytrias): todo file_name lookup
-	Bind(st_interactive_open_or_new,       KeyCode_O, KeyCode_Control);
+    Bind(interactive_open_or_new,       KeyCode_O, KeyCode_Control);
     Bind(open_in_other,                 KeyCode_O, KeyCode_Alt);
     Bind(interactive_kill_buffer,       KeyCode_K, KeyCode_Control);
     // NOTE(Skytrias): new
@@ -52,7 +44,7 @@ st_set_bindings(Mapping *mapping, i64 global_id, i64 file_id, i64 code_id)
     Bind(change_to_build_panel,         KeyCode_Period, KeyCode_Alt);
     Bind(close_build_panel,             KeyCode_Comma, KeyCode_Alt);
     Bind(goto_next_jump,                KeyCode_N, KeyCode_Alt);
-    Bind(goto_prev_jump,                KeyCode_N, KeyCode_Alt, KeyCode_Shift);
+    Bind(goto_prev_jump,                KeyCode_N, KeyCode_Alt, KeyCode_Control);
     // NOTE(Skytrias): i never use this
 	//Bind(build_in_build_panel,          KeyCode_M, KeyCode_Alt);
 	Bind(cursor_mark_swap,            KeyCode_M, KeyCode_Alt);
@@ -62,7 +54,9 @@ st_set_bindings(Mapping *mapping, i64 global_id, i64 file_id, i64 code_id)
     Bind(execute_previous_cli,          KeyCode_Z, KeyCode_Alt, KeyCode_Shift);
     Bind(command_lister,                KeyCode_X, KeyCode_Alt);
     Bind(project_command_lister,        KeyCode_X, KeyCode_Alt, KeyCode_Shift);
-    Bind(list_all_functions_current_buffer, KeyCode_I, KeyCode_Control, KeyCode_Shift);
+    // NOTE(Skytrias): new
+    Bind(list_all_functions_current_buffer, KeyCode_Q, KeyCode_Control);
+    Bind(list_all_functions_current_buffer_lister, KeyCode_Q, KeyCode_Control, KeyCode_Alt);
     Bind(project_fkey_command, KeyCode_F1);
     Bind(project_fkey_command, KeyCode_F2);
     Bind(project_fkey_command, KeyCode_F3);
@@ -118,11 +112,11 @@ st_set_bindings(Mapping *mapping, i64 global_id, i64 file_id, i64 code_id)
     Bind(replace_in_range,            KeyCode_A, KeyCode_Control);
     Bind(copy,                        KeyCode_C, KeyCode_Control);
     Bind(delete_range,                KeyCode_D, KeyCode_Control);
-    Bind(delete_line,                 KeyCode_D, KeyCode_Control, KeyCode_Shift);
+    Bind(delete_line,                 KeyCode_D, KeyCode_Control, KeyCode_Alt);
     Bind(center_view,                 KeyCode_E, KeyCode_Control);
     Bind(left_adjust_view,            KeyCode_E, KeyCode_Control, KeyCode_Shift);
     Bind(st_search,                      KeyCode_F, KeyCode_Control);
-    Bind(list_all_locations,          KeyCode_F, KeyCode_Control, KeyCode_Shift);
+    Bind(list_all_locations,          KeyCode_F, KeyCode_Control, KeyCode_Alt);
     Bind(list_all_substring_locations_case_insensitive, KeyCode_F, KeyCode_Alt);
     Bind(st_goto_line,                   KeyCode_G, KeyCode_Control);
     Bind(list_all_locations_of_selection,  KeyCode_G, KeyCode_Control, KeyCode_Shift);
@@ -131,14 +125,14 @@ st_set_bindings(Mapping *mapping, i64 global_id, i64 file_id, i64 code_id)
     Bind(duplicate_line,              KeyCode_L, KeyCode_Control);
     Bind(cursor_mark_swap,            KeyCode_M, KeyCode_Control);
     Bind(reopen,                      KeyCode_O, KeyCode_Control, KeyCode_Shift);
-    Bind(query_replace,               KeyCode_Q, KeyCode_Control);
-    Bind(query_replace_identifier,    KeyCode_Q, KeyCode_Control, KeyCode_Shift);
-    Bind(query_replace_selection,     KeyCode_Q, KeyCode_Alt);
+    //Bind(query_replace,               KeyCode_Q, KeyCode_Control);
+    //Bind(query_replace_identifier,    KeyCode_Q, KeyCode_Control, KeyCode_Shift);
+    //Bind(query_replace_selection,     KeyCode_Q, KeyCode_Alt);
     Bind(st_reverse_search,              KeyCode_R, KeyCode_Control);
     Bind(save,                        KeyCode_S, KeyCode_Control);
     Bind(save_all_dirty_buffers,      KeyCode_S, KeyCode_Control, KeyCode_Shift);
     Bind(st_search_identifier,           KeyCode_T, KeyCode_Control);
-    Bind(list_all_locations_of_identifier, KeyCode_T, KeyCode_Control, KeyCode_Shift);
+    Bind(list_all_locations_of_identifier, KeyCode_T, KeyCode_Control, KeyCode_Alt);
     Bind(paste_and_indent,            KeyCode_V, KeyCode_Control);
     //Bind(paste_next_and_indent,       KeyCode_V, KeyCode_Control, KeyCode_Shift);
     Bind(cut,                         KeyCode_X, KeyCode_Control);
@@ -185,26 +179,12 @@ st_set_bindings(Mapping *mapping, i64 global_id, i64 file_id, i64 code_id)
     //Bind(open_file_in_quotes,        KeyCode_1, KeyCode_Alt);
     //Bind(open_matching_file_cpp,     KeyCode_2, KeyCode_Alt);
 	
-	// NOTE(Skytrias): todo shortcuts
-	Bind(st_todo_insert_task_complete, KeyCode_1, KeyCode_Alt);
-	Bind(st_todo_insert_task_canceled, KeyCode_2, KeyCode_Alt);
-	Bind(st_todo_insert_task_important, KeyCode_3, KeyCode_Alt);
-	Bind(st_todo_remove_task, KeyCode_4, KeyCode_Alt);
-	// NOTE(Skytrias): timer shortcuts
-	Bind(st_pomodoro_start, KeyCode_1, KeyCode_Shift, KeyCode_Control);
-	Bind(st_short_break_start, KeyCode_2, KeyCode_Shift, KeyCode_Control);
-	Bind(st_long_break_start, KeyCode_3, KeyCode_Shift, KeyCode_Control);
-	Bind(st_pause_timer, KeyCode_4, KeyCode_Shift, KeyCode_Control);
-	Bind(st_stop_timer, KeyCode_5, KeyCode_Shift, KeyCode_Control);
-	Bind(st_paste_timer, KeyCode_V, KeyCode_Shift, KeyCode_Control);
-	
 	// NOTE(Skytrias): panel options
 	Bind(open_panel_vsplit, KeyCode_V, KeyCode_Alt);
 	Bind(open_panel_hsplit, KeyCode_H, KeyCode_Alt);
 	Bind(close_panel, KeyCode_C, KeyCode_Alt);
 	Bind(st_passive_buffer_on, KeyCode_P, KeyCode_Alt);
 	Bind(st_passive_buffer_off, KeyCode_P, KeyCode_Shift, KeyCode_Alt);
-	Bind(st_todo_toggle, KeyCode_A, KeyCode_Alt);
 }
 
 // NOTE(Skytrias): my custom settings when creating a new rs file, probably will change a lot
@@ -241,15 +221,17 @@ BUFFER_HOOK_SIG(st_begin_buffer){
 		
 		for (i32 i = 0; i < extensions.count; ++i){
 			if (string_match(ext, extensions.strings[i])){
-				if (string_match(ext, string_u8_litexpr("cpp")) || 
+				if (string_match(ext, string_u8_litexpr("cpp")) ||
 					string_match(ext, string_u8_litexpr("h")) ||
 					string_match(ext, string_u8_litexpr("c")) ||
 					string_match(ext, string_u8_litexpr("hpp")) ||
+					string_match(ext, string_u8_litexpr("nim")) ||
 					string_match(ext, string_u8_litexpr("rs")) ||
 					string_match(ext, string_u8_litexpr("toml")) ||
 					string_match(ext, string_u8_litexpr("vert")) ||
 					string_match(ext, string_u8_litexpr("frag")) ||
 					string_match(ext, string_u8_litexpr("ron")) ||
+					string_match(ext, string_u8_litexpr("odin")) ||
 					string_match(ext, string_u8_litexpr("cc"))){
 					treat_as_code = true;
 				}
@@ -350,12 +332,6 @@ function Rect_f32 st_buffer_region(Application_Links *app, View_ID view_id, Rect
         Rect_f32_Pair pair = layout_line_number_margin(app, buffer, region, digit_advance);
         region = pair.max;
     }
-	
-	// NOTE(Skytrias): testing todo
-	if (global_todo_margin_open && global_debug_sidebar) {
-		Rect_f32_Pair pair = st_layout_todo_number_margin(app, region, digit_advance);
-		region = pair.max;
-	}
 	
     return(region);
 }
