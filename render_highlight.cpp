@@ -1,17 +1,19 @@
 // additional colors
+
+// nord
+//global u32 FUNCTION_HIGHLIGHT_COLOR = 0xFF5e81ac;
+//global u32 STRUCT_HIGHLIGHT_COLOR = 0xFFbf616a;
+
 // solarized
-/*
 global u32 FUNCTION_HIGHLIGHT_COLOR = 0xFF268bd2;
-global u32 ARRAY_HIGHLIGHT_COLOR = 0xFF268bd2;
-global u32 MACRO_HIGHLIGHT_COLOR = 0xFF2edb30;
-global u32 HACK_HIGHLIGHT_COLOR = 0xd08770FF;
-global u32 STRUCT_HIGHLIGHT_COLOR = 0xFF859900;
-*/
+global u32 STRUCT_HIGHLIGHT_COLOR = 0xFF89d125;
+
+/*
 global u32 FUNCTION_HIGHLIGHT_COLOR = 0xFF5577e8;
 global u32 STRUCT_HIGHLIGHT_COLOR = 0xFF77e855;
+*/
 
 global u32 MACRO_HIGHLIGHT_COLOR = 0xFF2edb30;
-global u32 HACK_HIGHLIGHT_COLOR = 0xd08770FF;
 global u32 MARK_RANGE_HIGHLIGHT_COLOR = 0x05859900; // should have low alpha!
 
 static void
@@ -382,181 +384,6 @@ function void st_paint_functions(Application_Links *app, Buffer_ID buffer, Text_
     }
 }
 
-// NOTE(Skytrias): paints all text leading up to a '!' in some color you like, nice for rust macros
-function void
-st_paint_rust_macros(Application_Links *app, Buffer_ID buffer, Text_Layout_ID text_layout_id) {
-    i64 keyword_length = 0;
-    i64 start_pos = 0;
-    i64 end_pos = 0;
-    
-	Token_Array array = get_token_array_from_buffer(app, buffer);
-    if (array.tokens != 0){
-        Range_i64 visible_range = text_layout_get_visible_range(app, text_layout_id);
-        i64 first_index = token_index_from_pos(&array, visible_range.first);
-        Token_Iterator_Array it = token_iterator_index(0, &array, first_index);
-        
-		for (;;){
-            Token *token = token_it_read(&it);
-            if (token->pos >= visible_range.one_past_last){
-                break;
-            }
-            
-            // get pos at paren
-            if (keyword_length != 0 && token->sub_kind == TokenCppKind_Not) {
-                end_pos = token->pos + 1;
-            }
-            
-            // search for default text, count up the size
-            if (token->kind == TokenBaseKind_Identifier) {
-                if (keyword_length == 0) {
-                    start_pos = token->pos;
-                }
-                
-                keyword_length += 1;
-            } else {
-                keyword_length = 0;
-            }
-            
-            // color text
-            if (start_pos != 0 && end_pos != 0) {
-                Range_i64 range = { 0 };
-                range.start = start_pos;
-                range.end = end_pos;
-				
-				// NOTE(Skytrias): use your own colorscheme her via fcolor_id(defcolor_*)
-				// NOTE(Skytrias): or set the color you'd like to use globally like i do
-				paint_text_color(app, text_layout_id, range, MACRO_HIGHLIGHT_COLOR);
-				
-				end_pos = 0;
-				start_pos = 0;
-            }
-            
-            if (!token_it_inc_all(&it)){
-                break;
-            }
-        }
-    }
-}
-
-// NOTE(Skytrias): not used! "can" show you dotted '.' places
-function void
-st_paint_rust_indent(Application_Links *app, Buffer_ID buffer, Text_Layout_ID text_layout_id) {
-    i64 start_pos = 0;
-    i64 end_pos = 0;
-	i64 keyword_length = 0;
-	b32 text_found = 0;
-	
-	Token_Array array = get_token_array_from_buffer(app, buffer);
-    if (array.tokens != 0){
-        Range_i64 visible_range = text_layout_get_visible_range(app, text_layout_id);
-        i64 first_index = token_index_from_pos(&array, visible_range.first);
-        Token_Iterator_Array it = token_iterator_index(0, &array, first_index);
-        for (;;){
-            Token *token = token_it_read(&it);
-            if (token->pos >= visible_range.one_past_last){
-                break;
-            }
-            
-			// get pos at paren
-            if (text_found && token->sub_kind == TokenCppKind_ParenOp) {
-                end_pos = token->pos;
-            }
-			
-            // search for default text, count up the size
-            if (token->kind == TokenBaseKind_Identifier ||
-				token->sub_kind == TokenCppKind_Dot
-				) {
-                if (keyword_length == 0) {
-					if (token->sub_kind == TokenCppKind_Dot) {
-						i64 pos = token->pos;
-						i64 line_num = get_line_number_from_pos(app, buffer, pos);
-						i64 line_start_pos = get_line_start_pos(app, buffer, line_num);
-						
-						// HACK(Skytrias): very bad, takes distance from pos to line start and sees if bytes are "close enough"
-						i64 sub_byte_range = pos - line_start_pos;
-						
-						if (sub_byte_range < 8) {
-							start_pos = token->pos;
-							keyword_length += 1;
-						}
-					}
-				} else {
-					if (token->kind == TokenBaseKind_Identifier) {
-						keyword_length += 1;
-						text_found = 1;
-					}
-				}
-            } else {
-                keyword_length = 0;
-				text_found = 0;
-			}
-            
-            // color text
-            if (start_pos != 0 && end_pos != 0) {
-                Range_i64 range = { 0 };
-                range.start = start_pos;
-                range.end = end_pos;
-				
-				// NOTE(Skytrias): use your own colorscheme her via fcolor_id(defcolor_*)
-				// NOTE(Skytrias): or set the color you'd like to use globally like i do
-                paint_text_color(app, text_layout_id, range, MACRO_HIGHLIGHT_COLOR);
-                
-                end_pos = 0;
-                start_pos = 0;
-				text_found = 0;
-			}
-            
-            if (!token_it_inc_all(&it)){
-                break;
-            }
-        }
-    }
-}
-
-// NOTE(Skytrias): paints all text leading up to a '\'' in some color you like, nice for rust macros
-function void
-st_paint_rust_characters(Application_Links *app, Buffer_ID buffer, Text_Layout_ID text_layout_id) {
-	b32 character_found = 0;
-    
-	Token_Array array = get_token_array_from_buffer(app, buffer);
-    if (array.tokens != 0){
-        Range_i64 visible_range = text_layout_get_visible_range(app, text_layout_id);
-        i64 first_index = token_index_from_pos(&array, visible_range.first);
-        Token_Iterator_Array it = token_iterator_index(0, &array, first_index);
-        
-		for (;;){
-            Token *token = token_it_read(&it);
-            if (token->pos >= visible_range.one_past_last){
-                break;
-            }
-            
-			if (character_found) {
-				if (token->kind == TokenBaseKind_Identifier) {
-					Range_i64 range = { 0 };
-					range.start = token->pos - 1;
-					range.end = token->pos + 1;
-					paint_text_color(app, text_layout_id, range, fcolor_resolve(fcolor_id(defcolor_keyword)));
-					character_found = 0;
-				} else {
-					character_found = 0;
-				}
-			} else {
-				if (token->sub_kind == TokenCppKind_LiteralCharacter ||
-					token->sub_kind == TokenCppKind_LiteralCharacterWide ||
-					token->sub_kind == TokenCppKind_LiteralCharacterUTF8 ||
-					token->sub_kind == TokenCppKind_LiteralCharacterUTF16 ||
-					token->sub_kind == TokenCppKind_LiteralCharacterUTF32) {
-					character_found = 1;
-				}
-			}
-			
-            if (!token_it_inc_all(&it)){
-                break;
-            }
-        }
-    }
-}
-
 static void st_paint_tokens(Application_Links *app, Buffer_ID buffer, Text_Layout_ID text_layout_id)
 {
     Scratch_Block scratch(app);
@@ -688,6 +515,27 @@ tv_colorize_hex_colors(Application_Links *app, Buffer_ID buffer, Text_Layout_ID 
     }
 }
 
+function b32
+st_draw_button(Application_Links *app, Rect_f32 rect, Vec2_f32 mouse_p, Face_ID face, String_Const_u8 text){
+    b32 hovered = false;
+    if (rect_contains_point(rect, mouse_p)){
+        hovered = true;
+    }
+    
+    UI_Highlight_Level highlight = hovered?UIHighlight_Active:UIHighlight_None;
+    draw_rectangle_fcolor(app, rect, 3.f, get_item_margin_color(highlight));
+    rect = rect_inner(rect, 3.f);
+    draw_rectangle_fcolor(app, rect, 3.f, get_item_margin_color(highlight, 1));
+    
+    Scratch_Block scratch(app);
+    Fancy_String *fancy = push_fancy_string(scratch, 0, face, fcolor_id(defcolor_text_default), text);
+    Vec2_f32 dim = get_fancy_string_dim(app, 0, fancy);
+    Vec2_f32 p = (rect.p0 + rect.p1 - dim)*0.5f;
+    draw_fancy_string(app, fancy, p);
+    
+    return(hovered);
+}
+
 static void
 st_render_buffer(Application_Links *app, View_ID view_id, Face_ID face_id,
 				 Buffer_ID buffer, Text_Layout_ID text_layout_id,
@@ -708,7 +556,6 @@ st_render_buffer(Application_Links *app, View_ID view_id, Face_ID face_id,
 			Comment_Highlight_Pair pairs[] = {
 				{string_u8_litexpr("NOTE"), finalize_color(defcolor_comment_pop, 0)},
 				{string_u8_litexpr("TODO"), finalize_color(defcolor_comment_pop, 1)},
-				{string_u8_litexpr("HACK"), HACK_HIGHLIGHT_COLOR},
 			};
 			draw_comment_highlights(app, buffer, text_layout_id,
 									&token_array, pairs, ArrayCount(pairs));
@@ -737,19 +584,6 @@ st_render_buffer(Application_Links *app, View_ID view_id, Face_ID face_id,
 		draw_scope_highlight(app, buffer, text_layout_id, cursor_pos, colors.vals, colors.count);
     }
 	
-    // NOTE(rjf): Brace highlight
-    /*
-   {
-       ARGB_Color colors[] =
-       {
-           0xff8ffff2,
-       };
-       
-       Fleury4RenderBraceHighlight(app, buffer, text_layout_id, cursor_pos,
-                                   colors, sizeof(colors)/sizeof(colors[0]));
-    }
-    */
-	
     if (global_config.use_error_highlight || global_config.use_jump_highlight){
 		// NOTE(allen): Error highlight
 		String_Const_u8 name = string_u8_litexpr("*compilation*");
@@ -777,17 +611,10 @@ st_render_buffer(Application_Links *app, View_ID view_id, Face_ID face_id,
 	
     // NOTE(Skytrias): word highlight before braces ()
     st_paint_functions(app, buffer, text_layout_id);
-    //st_paint_rust_macros(app, buffer, text_layout_id);
-    //st_paint_rust_characters(app, buffer, text_layout_id);
-	//st_paint_rust_indent(app, buffer, text_layout_id);
     st_paint_tokens(app, buffer, text_layout_id);
 	
 	if (is_active_view) {
 		st_draw_cursor_mark_range(app, view_id, buffer, face_id, text_layout_id);
-	}
-	
-	if (is_active_view) {
-		st_auto_snippet(app, view_id, buffer, face_id, text_layout_id);
 	}
 	
     // NOTE(allen): Line highlight
@@ -829,6 +656,8 @@ st_render_buffer(Application_Links *app, View_ID view_id, Face_ID face_id,
     {
 		Fleury4RenderBraceLines(app, buffer, view_id, text_layout_id, cursor_pos);
     }
+    
+    //st_draw_todo(app, view_id, buffer, face_id);
     
     draw_set_clip(app, prev_clip);
 }

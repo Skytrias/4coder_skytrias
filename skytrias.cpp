@@ -7,7 +7,7 @@
 //#include <stdlib.h>
 
 // NOTE(Skytrias): exports my snippets into the snippet lister, turn this off or include your own, additionally I'd recommend disabling the general snippets
-#define SNIPPET_EXPANSION "snippets.inc"
+//#define SNIPPET_EXPANSION "snippets.inc"
 
 #include "4coder_default_include.cpp"
 
@@ -35,7 +35,6 @@ custom_layer_init(Application_Links *app){
 	set_all_default_hooks(app);
 	set_custom_hook(app, HookID_RenderCaller, st_render_caller);
 	set_custom_hook(app, HookID_BeginBuffer, st_begin_buffer);
-	set_custom_hook(app, HookID_NewFile, st_new_rust_file);
 	set_custom_hook(app, HookID_BufferRegion, st_buffer_region);
 	
 	mapping_init(tctx, &framework_mapping);

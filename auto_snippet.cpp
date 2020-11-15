@@ -21,40 +21,31 @@ st_write_text(Application_Links *app, String_Const_u8 insert){
         i64 pos = view_get_cursor_pos(app, view);
         pos = view_get_character_legal_pos_from_pos(app, view, pos);
 		
-		// NOTE(Skytrias): save position of character written for snippet automation
-		{
-			char c = insert.str[0];
-			
-			// these characters will break up the range setting
-			if (c == ' ' ||
-				c == '_' ||
-				c == '+' ||
-				c == '-' ||
-				c == '/' ||
-				c == '*' ||
-				c == '=' ||
-				c == ':' ||
-				c == ';' ||
-				c == '.' ||
-				c == ',' ||
-				c == ')' ||
-				c == '(' ||
-                c == '[' ||
-                c == ']' ||
-                c == '|' ||
-                c == '\t' ||
-                c == '\n') {
-				global_snippet_cursor_set = 0;
-			} else {
-				// if nothing has been set, set it and its first position
-				if (!global_snippet_cursor_set) {
-					global_snippet_cursor_set = 1;
-					global_snippet_cursor_range.start = pos;
-					global_snippet_start_line = get_line_number_from_pos(app, buffer, pos);
-				}
-			}
-		}
-		
+        // NOTE(Skytrias): insert more characters automatically, pos set to pos + 1 if one_left
+        b32 one_left = 0;
+        {
+            char c = insert.str[0];
+            if (c == '\"') {
+                insert = string_u8_litexpr("\"\"");
+                one_left = 1;
+            }
+            
+            if (c == '[') {
+                insert = string_u8_litexpr("[]");
+                one_left = 1;
+            }
+            
+            if (c == '(') {
+                insert = string_u8_litexpr("()");
+                one_left = 1;
+            }
+            
+            if (c == '\'') {
+                insert = string_u8_litexpr("\'\'");
+                one_left = 1;
+            }
+        }
+        
         // NOTE(allen): consecutive inserts merge logic
         History_Record_Index first_index = buffer_history_get_current_state_index(app, buffer);
         b32 do_merge = false;
@@ -78,7 +69,6 @@ st_write_text(Application_Links *app, String_Const_u8 insert){
             }
         }
 		
-        // NOTE(allen): perform the edit
         b32 edit_success = buffer_replace_range(app, buffer, Ii64(pos), insert);
         
 		// NOTE(allen): finish merging records if necessary
@@ -89,28 +79,7 @@ st_write_text(Application_Links *app, String_Const_u8 insert){
         
         // NOTE(allen): finish updating the cursor
         if (edit_success){
-            view_set_cursor_and_preferred_x(app, view, seek_pos(pos + insert.size));
-        }
-        
-        char c = insert.str[0];
-        if (c == '{') {
-            buffer_replace_range(app, buffer, Ii64(pos + insert.size), string_u8_litexpr("}"));
-        }
-        
-        if (c == '[') {
-            buffer_replace_range(app, buffer, Ii64(pos + insert.size), string_u8_litexpr("]"));
-        }
-        
-        if (c == '(') {
-            buffer_replace_range(app, buffer, Ii64(pos + insert.size), string_u8_litexpr(")"));
-        }
-        
-        if (c == '\"') {
-            buffer_replace_range(app, buffer, Ii64(pos + insert.size), string_u8_litexpr("\""));
-        }
-        
-        if (c == '\'') {
-            buffer_replace_range(app, buffer, Ii64(pos + insert.size), string_u8_litexpr("\'"));
+            view_set_cursor_and_preferred_x(app, view, seek_pos(one_left ? pos + one_left : pos + insert.size));
         }
     }
 }
@@ -158,93 +127,4 @@ CUSTOM_DOC("Inserts text and auto-indents the line on which the cursor sits if a
             st_write_text_input(app);
         }
     }
-}
-
-// loop to set the cursor end of the word you're typing, cancels the write at certian characters
-function void st_auto_snippet(Application_Links *app, View_ID view_id, Buffer_ID buffer, Face_ID face_id, Text_Layout_ID text_layout_id) {
-	// dont allow snippet autocomplete when no existasdasda
-	if (global_snippet_count < 0) {
-		global_snippet_cursor_set = false;
-		return;
-	}
-	
-	if (global_snippet_cursor_set) {
-		global_snippet_last_end_pos = global_snippet_cursor_range.end;
-		
-		i64 cursor_pos = view_get_cursor_pos(app, view_id);
-		
-		// NOTE(Skytrias): forced to do this or you could wrap all base_commands disable global_snippet_cursor_set each time it doesnt write
-		global_snippet_cursor_range.end = cursor_pos;
-		
-		// visual help
-		if (global_snippet_word_highlight_on) {
-			// Simple rect
-			Rect_f32 character_rect = text_layout_character_on_screen(app, text_layout_id, global_snippet_cursor_range.start);
-			Face_Metrics face_metrics = get_face_metrics(app, face_id);
-			f32 x = character_rect.x0;
-			f32 y = character_rect.y0;
-			f32 w = character_rect.x0 + (global_snippet_cursor_range.end - global_snippet_cursor_range.start) * face_metrics.space_advance;
-			f32 h = character_rect.y1;
-			Rect_f32 rect = { x, y, w, h };
-			draw_rectangle(app, rect, 4.0f, SNIPPET_HIGHLIGHT_COLOR);
-		}
-		
-		// skip same pos
-		if (cursor_pos == global_snippet_last_end_pos) {
-			return;
-		}
-		
-		// find out if there is a comment at the start of the line
-		i64 current_line_number = get_line_number_from_pos(app, buffer, cursor_pos);
-		
-		// additional check for line numbers, is helpful if you move after writing
-		if (current_line_number != global_snippet_start_line) {
-			global_snippet_cursor_set = false;
-			return;
-		}
-		
-		// stop if snippet set when word is bigger than 10 characters or goes minus!
-		i64 diff = global_snippet_cursor_range.end - global_snippet_cursor_range.start;
-		if (diff < 0 || diff > 10) {
-			global_snippet_cursor_set = false;
-			return;
-		}
-		
-		Scratch_Block scratch(app);
-		
-		// turn of auto snippet in line comment
-		if (st_has_line_comment(app, buffer, current_line_number)) {
-			global_snippet_cursor_set = false;
-		}
-		
-		String_Const_u8 result = string_u8_empty;
-		
-		// TODO(Skytrias): simplify?
-		i64 length = range_size(global_snippet_cursor_range);
-		if (length > 0){
-			Temp_Memory restore_point = begin_temp(scratch);
-			u8 *memory = push_array(scratch, u8, length);
-			if (buffer_read_range(app, buffer, global_snippet_cursor_range, memory)){
-				result = SCu8(memory, length);
-			} else{
-				end_temp(restore_point);
-			}
-		}
-		
-		if (result.size > 0) {
-			// remove any whitespace
-			result = string_skip_whitespace(result);
-			
-			// loop through snippet names and match with result
-			Snippet *snippet = default_snippets;
-			for (i32 i = 0; i < global_snippet_count; i += 1, snippet += 1){
-				if (string_match(result, SCu8(snippet->name))){
-					buffer_replace_range(app, buffer, global_snippet_cursor_range, string_u8_empty);
-					write_snippet(app, view_id, buffer, global_snippet_cursor_range.start, snippet);
-					global_snippet_cursor_set = false;
-					break;
-				}
-			}
-		}
-	}
 }

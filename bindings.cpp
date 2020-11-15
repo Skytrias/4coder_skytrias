@@ -1,23 +1,3 @@
-CUSTOM_COMMAND_SIG(st_exit_4coder)
-CUSTOM_DOC("Attempts to close 4coder.")
-{
-	send_exit_signal(app);
-}
-
-CUSTOM_COMMAND_SIG(st_passive_buffer_on)
-CUSTOM_DOC("Makes a buffer passive")
-{
-	View_ID view_id = get_active_view(app, Access_ReadVisible);
-	view_set_passive(app, view_id, 1);
-}
-
-CUSTOM_COMMAND_SIG(st_passive_buffer_off)
-CUSTOM_DOC("Makes a buffer non passive")
-{
-	View_ID view_id = get_active_view(app, Access_ReadVisible);
-	view_set_passive(app, view_id, 0);
-}
-
 // NOTE(Skytrias): own preferences to keybindings
 static void
 st_set_bindings(Mapping *mapping, i64 global_id, i64 file_id, i64 code_id)
@@ -31,10 +11,13 @@ st_set_bindings(Mapping *mapping, i64 global_id, i64 file_id, i64 code_id)
     Bind(keyboard_macro_start_recording , KeyCode_U, KeyCode_Control);
     Bind(keyboard_macro_finish_recording, KeyCode_U, KeyCode_Control, KeyCode_Alt);
     Bind(keyboard_macro_replay,           KeyCode_U, KeyCode_Alt);
+    Bind(change_active_panel,           KeyCode_Period, KeyCode_Control);
     Bind(change_active_panel,           KeyCode_Comma, KeyCode_Control);
     Bind(change_active_panel_backwards, KeyCode_Comma, KeyCode_Control, KeyCode_Shift);
     Bind(interactive_new,               KeyCode_N, KeyCode_Control);
     Bind(interactive_open_or_new,       KeyCode_O, KeyCode_Control);
+    //Bind(list_all_functions_current_buffer_lister, KeyCode_P, KeyCode_Control);
+    Bind(quick_swap_buffer, KeyCode_P, KeyCode_Control);
     Bind(open_in_other,                 KeyCode_O, KeyCode_Alt);
     Bind(interactive_kill_buffer,       KeyCode_K, KeyCode_Control);
     // NOTE(Skytrias): new
@@ -73,7 +56,7 @@ st_set_bindings(Mapping *mapping, i64 global_id, i64 file_id, i64 code_id)
     Bind(project_fkey_command, KeyCode_F14);
     Bind(project_fkey_command, KeyCode_F15);
     Bind(project_fkey_command, KeyCode_F16);
-    Bind(st_exit_4coder,          KeyCode_F4, KeyCode_Alt);
+    Bind(exit_4coder,          KeyCode_F4, KeyCode_Alt);
     BindMouseWheel(mouse_wheel_scroll);
     BindMouseWheel(mouse_wheel_change_face_size, KeyCode_Control);
 	
@@ -112,7 +95,7 @@ st_set_bindings(Mapping *mapping, i64 global_id, i64 file_id, i64 code_id)
     Bind(replace_in_range,            KeyCode_A, KeyCode_Control);
     Bind(copy,                        KeyCode_C, KeyCode_Control);
     Bind(delete_range,                KeyCode_D, KeyCode_Control);
-    Bind(delete_line,                 KeyCode_D, KeyCode_Control, KeyCode_Alt);
+    Bind(delete_line,                 KeyCode_D, KeyCode_Control, KeyCode_Shift);
     Bind(center_view,                 KeyCode_E, KeyCode_Control);
     Bind(left_adjust_view,            KeyCode_E, KeyCode_Control, KeyCode_Shift);
     Bind(st_search,                      KeyCode_F, KeyCode_Control);
@@ -166,7 +149,8 @@ st_set_bindings(Mapping *mapping, i64 global_id, i64 file_id, i64 code_id)
 	Bind(list_all_locations,               KeyCode_Tab, KeyCode_Shift, KeyCode_Control);
     Bind(list_all_locations_of_type_definition,               KeyCode_D, KeyCode_Alt);
     Bind(list_all_locations_of_type_definition_of_identifier, KeyCode_T, KeyCode_Alt, KeyCode_Shift);
-	
+	Bind(comment_line_toggle, KeyCode_W, KeyCode_Alt);
+    
 	// NOTE(Skytrias): german keyboard doesnt have these
 	//Bind(select_surrounding_scope,   KeyCode_LeftBracket, KeyCode_Alt);
     //Bind(select_surrounding_scope_maximal, KeyCode_LeftBracket, KeyCode_Alt, KeyCode_Shift);
@@ -183,29 +167,6 @@ st_set_bindings(Mapping *mapping, i64 global_id, i64 file_id, i64 code_id)
 	Bind(open_panel_vsplit, KeyCode_V, KeyCode_Alt);
 	Bind(open_panel_hsplit, KeyCode_H, KeyCode_Alt);
 	Bind(close_panel, KeyCode_C, KeyCode_Alt);
-	Bind(st_passive_buffer_on, KeyCode_P, KeyCode_Alt);
-	Bind(st_passive_buffer_off, KeyCode_P, KeyCode_Shift, KeyCode_Alt);
-}
-
-// NOTE(Skytrias): my custom settings when creating a new rs file, probably will change a lot
-BUFFER_HOOK_SIG(st_new_rust_file){
-    Scratch_Block scratch(app);
-	
-	String_Const_u8 file_name = push_buffer_base_name(app, scratch, buffer_id);
-    if (string_match(string_postfix(file_name, 3), string_u8_litexpr(".rs"))) {
-		Buffer_Insertion insert = begin_buffer_insertion_at_buffered(app, buffer_id, 0, scratch, KB(16));
-		insertf(&insert,
-				"use crate::engine::App;\n"
-				"use crate::scripts::*;\n"
-				"use crate::helpers::*;\n"
-				"\n");
-		end_buffer_insertion(&insert);
-		
-		View_ID view = get_active_view(app, Access_ReadWriteVisible);
-		jump_to_location(app, view, buffer_id, 100);
-	}
-	
-	return(0);
 }
 
 BUFFER_HOOK_SIG(st_begin_buffer){
@@ -225,14 +186,10 @@ BUFFER_HOOK_SIG(st_begin_buffer){
 					string_match(ext, string_u8_litexpr("h")) ||
 					string_match(ext, string_u8_litexpr("c")) ||
 					string_match(ext, string_u8_litexpr("hpp")) ||
-					string_match(ext, string_u8_litexpr("nim")) ||
-					string_match(ext, string_u8_litexpr("rs")) ||
-					string_match(ext, string_u8_litexpr("toml")) ||
 					string_match(ext, string_u8_litexpr("vert")) ||
 					string_match(ext, string_u8_litexpr("frag")) ||
-					string_match(ext, string_u8_litexpr("ron")) ||
-					string_match(ext, string_u8_litexpr("odin")) ||
-					string_match(ext, string_u8_litexpr("cc"))){
+                    string_match(ext, string_u8_litexpr("odin"))
+                    ){
 					treat_as_code = true;
 				}
 				
