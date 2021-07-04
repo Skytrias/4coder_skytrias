@@ -1,0 +1,50 @@
+defcolor_back = 0xFF002b36;
+defcolor_margin = 0xFF073642; // below with lower brightness
+defcolor_margin_hover = 0xFF073642;
+defcolor_margin_active = 0xFF073642;
+defcolor_list_item = {0x11586e75, defcolor_back};
+defcolor_list_item_hover = {0x33586e75, defcolor_margin};
+defcolor_list_item_active = {0x33586e75, defcolor_margin_active};
+defcolor_cursor = {0xFFdc322f, 0xFFEE7700};
+defcolor_at_cursor = defcolor_back;
+defcolor_highlight_cursor_line = 0x77073642;
+defcolor_highlight = 0xFF6c7100;
+defcolor_mark = 0xFF2aa198;
+defcolor_text_default = 0xFF93a1a1;
+defcolor_at_highlight = defcolor_back;
+defcolor_comment = 0xFF586e75;
+defcolor_comment_pop = {0xFF00A000, 0xFFA00000};
+defcolor_keyword = 0xFFdc322f;
+
+defcolor_str_constant = 0xFF2aa198;
+defcolor_char_constant = defcolor_str_constant;
+
+defcolor_int_constant = 0xFF2aa198;
+defcolor_float_constant = defcolor_int_constant;
+defcolor_bool_constant = defcolor_int_constant;
+defcolor_include = defcolor_int_constant;
+defcolor_preproc = 0xFF4E5E46;
+defcolor_special_character = 0xFF4E5E46;
+defcolor_ghost_character = 0xFF4E5E46;
+
+defcolor_paste = 0xFFDDEE00;
+defcolor_undo = 0xFF00DDEE;
+
+defcolor_highlight_junk = 0x33859900;
+defcolor_highlight_white = 0x33859900;
+
+defcolor_bar = defcolor_back;
+defcolor_bar_active = 0xff586e75;
+defcolor_base = 0xffdc322f;
+defcolor_pop1 = 0xffdc322f;
+defcolor_pop2 = 0xffdc322f;
+
+// default
+//defcolor_back_cycle = {0x00A00000, 0x0000A000, 0x000000A0, 0x00A0A000};
+defcolor_text_cycle = {0xFFF01010, 0xFF20D020, 0xFF0080E0, 0xFFD0D000};
+defcolor_back_cycle = {0x05A00000, 0x0500A000, 0x050000A0, 0x05A0A000};
+//defcolor_text_cycle = {0xFFA00000, 0xFF00A000, 0xFF0030B0, 0xFFA0A000};
+
+// default
+defcolor_line_numbers_back = 0xFF101010;
+defcolor_line_numbers_text = 0xFF404040;

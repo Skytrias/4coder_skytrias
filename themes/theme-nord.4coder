@@ -1,0 +1,45 @@
+defcolor_back = 0xFF2e3440;
+defcolor_margin = 0xFF3b4252; // nord1
+defcolor_margin_hover = 0xFF3b4252; // nord1
+defcolor_margin_active = 0xFF434c5e; //nord2
+defcolor_list_item = 0x334c566a; // nord2
+defcolor_list_item_hover = 0x554c566a; // nord2
+defcolor_list_item_active = 0x774c566a; // nord2
+defcolor_cursor = 0xAA81a1c1; // BLUE with lower alpha
+defcolor_at_cursor = defcolor_back;
+defcolor_highlight_cursor_line = 0xFF3b4252;
+defcolor_highlight = 0xFF8fbcbb; // prolly hover
+defcolor_mark = 0xFF8fbcbb;
+defcolor_text_default = 0xFFd8dee9;
+defcolor_at_highlight = 0xFFbf616a;
+defcolor_comment = 0xFF4C566A;
+defcolor_comment_pop = {0xFF00A000, 0xFFA00000};
+defcolor_keyword = 0xFF88c0d0;
+
+defcolor_str_constant = 0xFFa3be8c;
+defcolor_char_constant = 0xFFa3be8c;
+
+defcolor_int_constant = 0xFFb48ead;
+defcolor_float_constant = 0xFFb48ead;
+defcolor_bool_constant = 0xFF88c0d0;
+defcolor_include = 0xFFa3be8c;
+defcolor_preproc = 0xFFebcb8b;
+defcolor_special_character = 0xFFebcb8b;
+defcolor_ghost_character = 0xFFebcb8b;
+
+defcolor_paste = 0xFFbf616a;
+defcolor_undo = 0xFFbf616a;
+
+defcolor_highlight_junk = 0xFFbf616a;
+defcolor_highlight_white = 0xFFbf616a;
+
+defcolor_bar = 0xFF434c5e; // nord2
+defcolor_bar_active = 0xFFbf616a; // RESEARCH
+defcolor_base = 0xFFb48ead; // string in title
+defcolor_pop1 = 0xFFbf616a;
+defcolor_pop2 = 0xFFbf616a;
+
+// DISABLED
+defcolor_back_cycle = {  x00A0000, 0x0000A000, 0x000000A0, 0x00A0A000 };
+// NOTE and TODO
+defcolor_text_cycle = { 0xFFF01010, 0xFF20D020, 0xFF0080E0, 0xFFD0D000 };
