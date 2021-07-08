@@ -8,15 +8,20 @@ Customizations are kept minimal for my / your sake
 * Goto jumping since Code Indexing works
 * Error / Lister Jumping
 
-## How to try out
-Windows: *soon*
-Linux: Replace your `custom_4coder.so` with mine :tada:
+## How to try out :tada:
+Windows: Replace your `custom_4coder.dll` with mine
+Linux: Replace your `custom_4coder.so` with mine
 
 ## How to build
 Replace all files to their corresponding locations, i.e. `custom` folder files belong to custom etc.
 To get **odin** keyword lexing you have to rebuild the lexer with my custom language file
+The scripts have to live in the root `4coder` folder
 
-Linux: You can use my `release.sh` (rebuilds code) or `lex.sh` (rebuilds lexer and code)
+Release script rebuilds code 
+Lex script rebuilds the lexer and calls release script
+
+Windows: `release.bat` | `lex.bat`
+Linux: `release.sh` | `lex.sh`
 
 ## Themes
 * Solarized Dark
