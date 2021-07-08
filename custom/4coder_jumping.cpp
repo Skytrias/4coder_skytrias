@@ -65,12 +65,11 @@ parse_jump_location(String_Const_u8 line){
 	jump.sub_jump_indented = (string_get_character(line, 0) == ' ');
 	
 	String_Const_u8 reduced_line = string_skip_chop_whitespace(line);
-	u64 whitespace_length = (u64)(reduced_line.str - line.str);
 	line = reduced_line;
 	
-	i32 first_colon = (i32) (string_find_first(line, ':'));
-	i32 second_colon = (i32) first_colon + 1 + string_find_first(string_skip(line, first_colon + 1), ':');
-	i32 third_colon = (i32) second_colon + 1 + string_find_first(string_skip(line, second_colon + 1), ':');
+	u64 first_colon = (string_find_first(line, ':'));
+	u64 second_colon = first_colon + 1 + string_find_first(string_skip(line, first_colon + 1), ':');
+	u64 third_colon = second_colon + 1 + string_find_first(string_skip(line, second_colon + 1), ':');
 	
 	// odin lister jumps
 	if (!jump.is_ms_style && first_colon != 0 && second_colon != 0 && third_colon != 0 && first_colon < line.size && third_colon < line.size) {
@@ -85,7 +84,7 @@ parse_jump_location(String_Const_u8 line){
 		String_Const_u8 column_number = string_skip(string_prefix(line, third_colon), second_colon + 1);
 		jump.location.column = (i32) string_to_integer(column_number, 10); 
 		
-		jump.colon_position = first_colon;
+		jump.colon_position = (i32) first_colon;
 		jump.success = true;
 	}
 	
@@ -103,7 +102,7 @@ parse_jump_location(String_Const_u8 line){
 		String_Const_u8 column_number = string_skip(string_prefix(line, right_paren_pos), colon_seperator + 1);
 		jump.location.column = (i32) string_to_integer(column_number, 10); 
 		
-		jump.colon_position = colon_seperator;
+		jump.colon_position = (i32) colon_seperator;
 		jump.success = true;
 	}
 	

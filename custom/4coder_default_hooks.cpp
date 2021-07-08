@@ -442,13 +442,13 @@ default_render_buffer(Application_Links *app, View_ID view_id, Face_ID face_id,
 			active_cursor_string = push_buffer_range(app, scratch, active_cursor_buffer, Ii64(active_cursor_token));
 			
 			// Loop the visible tokens
-			Range_i64 visible_range = text_layout_get_visible_range(app, text_layout_id);
-			i64 first_index = token_index_from_pos(&token_array, visible_range.first);
+			Range_i64 local_visible_range = text_layout_get_visible_range(app, text_layout_id);
+			i64 first_index = token_index_from_pos(&token_array, local_visible_range.first);
 			Token_Iterator_Array it = token_iterator_index(0, &token_array, first_index);
 			for (;;)
 			{
 				Token *token = token_it_read(&it);
-				if(!token || token->pos >= visible_range.one_past_last)
+				if(!token || token->pos >= local_visible_range.one_past_last)
 				{
 					break;
 				}
